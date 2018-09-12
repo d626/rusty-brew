@@ -1,0 +1,6 @@
+[package]
+name = "rusty-brew"
+version = "0.1.0"
+authors = ["Didrik Rokhaug <didrik.rokhaug@gmail.com>"]
+
+[dependencies]
