@@ -4,3 +4,8 @@ version = "0.1.0"
 authors = ["Didrik Rokhaug <didrik.rokhaug@gmail.com>"]
 
 [dependencies]
+panic-abort = ""
+cortex-m-rt = ""
+nrf52 = ""
+nrf52-hal = ""
+cortex-m = ""
