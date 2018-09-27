@@ -7,5 +7,5 @@ authors = ["Didrik Rokhaug <didrik.rokhaug@gmail.com>"]
 panic-abort = ""
 cortex-m-rt = ""
 nrf52 = ""
-nrf52-hal = ""
+nrf52832-hal = {path = "../nrf52-hal/nrf52832-hal"}
 cortex-m = ""
