@@ -1,0 +1,67 @@
+* Forelesning om strukturell analyse
+** vi bruker Yourdon-metoden
+** Mening 
+- modularisering
+- forklare logisk sammenheng mellom ulike deler/komponenter
+** Tools used to define the invironment
+1. statment of purpose / functional description
+   - ATM and how it works, as seen from the outside
+*** context diagram
+   | terminator    | information               |
+   |---------------+---------------------------|
+   | customer      | bank account, amount      |
+   | bank db       | account, ammount ack/nack |
+   | police        | alarm                     |
+   | service staff | service request           |
+   - event list
+     - customer request for withdrawal
+     - request verification, ack/nack, confirm withdrawal
+     - sends alarm
+     - request specified service
+*** Inner analysis
+- Rules
+  - give the functional description of each inner bubble
+  - all informasjon m[ g[ ett sted. enten omgivelsene eller en annen intern boble
+  - all inforamsjon til omgivelsene skal v're speilet i kontekstdiagrammet
+- rekurrsivitet
+  - en indre modul kan modeleres p[ samme m[te.
+- Kan og brukes om HW
+- kombinsajon av HW og SW b;r deles i 2 diagrammer.
+  - samme interface mot omgivelsene.
+** forventet i TTK8
+*** kontekstdiagram
+**** funksjonell beskrivelse
+**** definere informasjon i/o av systemet
+*** minst ett lag indre analyse
+**** funksjonell beskrivelse av alle indre bobler
+**** definere inforamsjon i/o av alle indre bobler
+*** 2 ukers frist
+* WBS (Work Breakdown Structure)
+** Hensikt
+*** hvordan kan fremgang i prosjektet monitoreres
+*** visulaisere fremgang og kostnad av et prosjekt
+*** gir ingen informasjon om det tekninske
+*** bryte ned arbeided i deliverables
+*** hierarkisk struktur
+** Forventet
+*** lage ett wbs diagram, med forventet tidsbruk
+**** innen 2018-10-12
+*** oppdateres hver 2. uke
+**** 2018-10-26
+**** 2018-11-09
+* eksamen
+** E1 = ettermiddag 2018-11-28
+** Innlevering dokumentasjon
+*** sjekk forelesningslides fra forrige gang
+**** en uke f;r
+**** fredag f;r eksamen. 
+**** 22. november
+*** dokumentasjon av det jeg har gjort
+**** p[ ett slik niv[ at andre kan gjenta det
+**** 20 sider? avhengig av figurer og tegninger
+** eksamen er 30 min
+** 20-25 min presentasjon
+*** hva er oppgaven
+*** hvorfor
+*** hvordan ble det l;st
+*** demonstrasjon
