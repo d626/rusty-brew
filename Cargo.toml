@@ -4,8 +4,5 @@ version = "0.1.0"
 authors = ["Didrik Rokhaug <didrik.rokhaug@gmail.com>"]
 
 [dependencies]
-panic-abort = ""
-cortex-m-rt = ""
-nrf52 = ""
-nrf52832-hal = {path = "../nrf52-hal/nrf52832-hal"}
-cortex-m = ""
+rocket = "0.3.16"
+rocket_codegen = "0.3.16"
