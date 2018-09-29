@@ -1,34 +1,24 @@
-#![no_std]
-#![no_main]
+#![feature(plugin)]
+#![plugin(rocket_codegen)]
 
-extern crate panic_abort;
+extern crate rocket;
 
-extern crate cortex_m_rt;
-use cortex_m_rt::entry;
+mod controller;
+use controller::sensor::Sensor;
+use controller::mock::*;
 
-extern crate cortex_m;
+use std::cell::RefCell;
+use std::rc::Rc;
 
-extern crate nrf52832_hal;
-
-fn busy_wait() {
-    for _ in 0..100000 {
-        cortex_m::asm::nop();
-    }
+#[get("/")]
+fn index() -> &'static str {
+    "Hello, World!"
 }
 
-#[entry]
-fn main() -> ! {
-    let p = nrf52832_hal::nrf52::Peripherals::take().unwrap();
-    let p0 = p.P0;
+fn main() {
+    let mock_state = Rc::new(RefCell::new(MockInternalState::new()));
+    let foo = controller::mock::MockTemperatureSensor::new(mock_state);
 
-    p0.dirset.modify(|_r, w| w.pin17().set_bit());
-    loop {
-        p0.out.modify(|_r, w| w.pin17().set_bit());
-
-        busy_wait();
-
-        p0.out.modify(|_r, w| w.pin17().clear_bit());
-
-        busy_wait();
-    }
+    println!("Sensor value: {}", foo.read());
+    //rocket::ignite().mount("/", routes![index]).launch();
 }
