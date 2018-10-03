@@ -1,2 +1,9 @@
 /target
 **/*.rs.bk
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+**/auto
