@@ -54,7 +54,7 @@ impl Sensor for MockTemperatureSensor {
         let m = 25.0; // mass [kg]
         let cp = 4185.5; // specific heat capacity [J/kg*K]
         let A = 0.3807; // surface area [m^2]
-        let h = 1; // heat transfer coefficient 
+        let h = 1.0; // heat transfer coefficient 
         let r = (h*A) / (m*cp);
         unimplemented!();
     }

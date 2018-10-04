@@ -6,3 +6,4 @@ authors = ["Didrik Rokhaug <didrik.rokhaug@gmail.com>"]
 [dependencies]
 rocket = "0.3.16"
 rocket_codegen = "0.3.16"
+chrono = { version = "0.4", features = ["serde"] }
