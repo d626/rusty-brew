@@ -1,0 +1,6 @@
+Temperaturregulator til ølbrygging.
+- Setting av tidsserie for referanser (70C i 30min, 50C i 60min, 83C i 20min, ...)
+- Regulator med 5(?) diskrete utganger.
+- Display med temperatur, pådrag, referanse, timer
+- Logging av data
+
