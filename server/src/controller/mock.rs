@@ -12,7 +12,7 @@ const ROOM_TEMPERATURE: f32 = 20.0;
 
 /// Struct representing the system, used for simulation
 #[derive(Copy, Clone)]
-pub struct MockInternalState{
+pub struct MockInternalState {
     temp: f32,
     output: f32,
     last_updated: time::Instant
@@ -40,7 +40,7 @@ impl MockTemperatureSensor {
     pub fn new(internal: Rc<RefCell<MockInternalState>>)
                -> MockTemperatureSensor {
         MockTemperatureSensor {
-            internal_state: internal.clone()
+            internal_state: internal
         }
     }
 }
@@ -54,8 +54,9 @@ impl Sensor for MockTemperatureSensor {
         let m = 25.0; // mass [kg]
         let cp = 4185.5; // specific heat capacity [J/kg*K]
         let A = 0.3807; // surface area [m^2]
-        let h = 1.0; // heat transfer coefficient 
-        let r = (h*A) / (m*cp);
+        let h = 1.0; // heat transfer coefficient
+        let r = (h*A) / (m*cp); // [1/s]
+        state.temp = 20.0;
         unimplemented!();
     }
 }
@@ -67,7 +68,7 @@ pub struct MockOutput(Rc<RefCell<MockInternalState>>);
 impl MockOutput {
     /// Makes a new default MockOutput
     pub fn new(internal: Rc<RefCell<MockInternalState>>) -> Self {
-        MockOutput(internal.clone())
+        MockOutput(internal)
     }
 }
 

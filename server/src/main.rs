@@ -1,3 +1,7 @@
+#![allow(unreachable_code)]
+#![allow(unused_variables)]
+#![allow(dead_code)]
+
 #![feature(plugin)]
 #![plugin(rocket_codegen)]
 
@@ -20,11 +24,11 @@ fn index() -> &'static str {
 
 fn main() {
     let mock_state = Rc::new(RefCell::new(MockInternalState::new()));
-    let mock_sensor = controller::mock::MockTemperatureSensor::new(mock_state);
-    let mock_output = controller::mock::MockOutput::new();
+    let mock_sensor = controller::mock::MockTemperatureSensor::new(Rc::clone(&mock_state));
+    let mock_output = controller::mock::MockOutput::new(Rc::clone(&mock_state));
+    println!("Sensor value: {}", mock_sensor.read());
     let mock_controller = controller::Controller::new(mock_sensor, mock_output);
 
-    println!("Sensor value: {}", mock_controller.read());
 
     let controllers = vec![mock_controller];
 
