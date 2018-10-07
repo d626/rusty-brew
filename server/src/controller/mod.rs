@@ -15,8 +15,6 @@ use super::log::{Logger, LoggerChannel};
 
 pub struct ReferenceSeries(Vec<(Duration, f32)>);
 
-
-
 impl Display for ReferenceSeries {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result = String::new();
@@ -41,6 +39,7 @@ impl<S: Sensor, O: Output> Controller<S, O> {
         Controller{sensor, output}
     }
 
+    // name should include the name of the resource used, and be URL friendly
     pub fn start(&self, name: String, referance: ReferenceSeries) -> LoggerChannel {
         let logger = Logger::new(name, referance);
         // Start controlling the temperature

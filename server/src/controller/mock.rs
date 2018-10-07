@@ -40,9 +40,10 @@ impl MockInternalState {
             let r = (h*A) / (m*cp); // [1/s]
             let sleep_period = 500;
             loop {
-                if kill_rx.try_recv().is_err() {
-                    break;
-                };
+                match kill_rx.try_recv() {
+                    Err(mpsc::TryRecvError::Disconnected) => break,
+                    _ => {}
+                }
                 let T_env = output_mutex.lock()
                     .expect("Unable to lock output_mutex");
                 let mut T = temperature_mutex.lock()

@@ -74,6 +74,7 @@ fn post_reference_series(name: String, reference_series: ReferenceSeries) {
 
 // get /start/<resource>/<profile>
 // can fail if <resource> OR <profile> does not exist
+// should it include the name of the beer?
 fn strart_controlling<S, O>(resource: Controller<S, O>, profile: ReferenceSeries)
     where S: Sensor, O: Output {
     unimplemented!();
