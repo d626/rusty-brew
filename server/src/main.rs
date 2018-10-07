@@ -14,13 +14,11 @@ use controller::mock::*;
 
 mod log;
 
+mod interface;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, World!"
-}
 
 fn main() {
     let mock_state = Rc::new(RefCell::new(MockInternalState::new()));
@@ -31,6 +29,4 @@ fn main() {
 
 
     let controllers = vec![mock_controller];
-
-    //rocket::ignite().mount("/", routes![index]).launch();
 }
