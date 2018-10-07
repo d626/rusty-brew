@@ -6,7 +6,9 @@
 #![plugin(rocket_codegen)]
 
 extern crate rocket;
+
 extern crate chrono;
+use chrono::Local;
 
 mod controller;
 use controller::sensor::Sensor;
@@ -16,14 +18,12 @@ mod log;
 
 mod interface;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
-
 fn main() {
-    let mock_state = Rc::new(RefCell::new(MockInternalState::new()));
-    let mock_sensor = controller::mock::MockTemperatureSensor::new(Rc::clone(&mock_state));
-    let mock_output = controller::mock::MockOutput::new(Rc::clone(&mock_state));
+    let date = Local::now();
+    println!("Date: {}", date.format("%Y-%m-%d"));
+    let mock_state = MockInternalState::new();
+    let mock_sensor = controller::mock::MockTemperatureSensor::new(mock_state.clone());
+    let mock_output = controller::mock::MockOutput::new(mock_state.clone());
     println!("Sensor value: {}", mock_sensor.read());
     let mock_controller = controller::Controller::new(mock_sensor, mock_output);
 
