@@ -6,12 +6,9 @@ use std::sync::mpsc::Sender;
 
 use super::controller::ReferenceSeries;
 
-
 use chrono::prelude::*;
 
 pub type LoggerChannel = Sender<LogEntry>;
-
-pub struct LogName(String, SystemTime);
 
 pub struct LogEntry {
     timestamp: SystemTime,
@@ -28,9 +25,9 @@ pub struct Logger {
 
 impl Logger {
     /// Makes a new Logger (and therefore log). Name is the name of the logfile,
-    /// and must be globally unique.
     pub fn new(name: String, reference: ReferenceSeries) -> Logger {
         let date = Local::now(); // Local date
+        let name = format!("{}_{}.log", name, date);
         let logger = Logger {
             name,
             last_entry: None
@@ -59,7 +56,7 @@ pub fn get_log(name: &str) -> std::io::Result<String> {
     unimplemented!();
 }
 
-pub fn get_list_of_logs() -> Vec<LogName> {
+pub fn get_list_of_logs() -> Vec<String> {
     unimplemented!();
 }
 
