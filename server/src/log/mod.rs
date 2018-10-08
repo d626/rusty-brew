@@ -57,6 +57,13 @@ pub fn get_log(name: &str) -> std::io::Result<String> {
 }
 
 pub fn get_list_of_logs() -> Vec<String> {
-    unimplemented!();
+    let mut result = Vec::new();
+    for file in fs::read_dir("logs").expect("Unable to read log folder") {
+        result.push(file.expect("Fail while reading log folder")
+                    .file_name()
+                    .into_string()
+                    .expect("Logname not a valid string"));
+    }
+    result
 }
 
