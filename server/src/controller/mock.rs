@@ -44,12 +44,14 @@ impl MockInternalState {
                     Err(mpsc::TryRecvError::Disconnected) => break,
                     _ => {}
                 }
-                let T_env = output_mutex.lock()
-                    .expect("Unable to lock output_mutex");
-                let mut T = temperature_mutex.lock()
-                    .expect("Unable to lock temperature_mutex");
-                let dt = -r * (*T - *T_env);
-                *T = *T + (sleep_period as f32)/1000.0 * dt;
+                {
+                    let T_env = output_mutex.lock()
+                        .expect("Unable to lock output_mutex");
+                    let mut T = temperature_mutex.lock()
+                        .expect("Unable to lock temperature_mutex");
+                    let dt = -r * (*T - *T_env);
+                    *T = *T + (sleep_period as f32)/1000.0 * dt;
+                } // Mutexes are unlocked here
                 thread::sleep(time::Duration::from_millis(sleep_period));
             }
             println!("Simulator finished");
