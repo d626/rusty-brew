@@ -36,7 +36,7 @@ impl MockInternalState {
             let m = 25.0; // mass [kg]
             let cp = 4185.5; // specific heat capacity [J/kg*K]
             let A = 0.3807; // surface area [m^2]
-            let h = 1.0; // heat transfer coefficient
+            let h = 10000.0; // heat transfer coefficient, chosen arbitrarily
             let r = (h*A) / (m*cp); // [1/s]
             let sleep_period = 500;
             loop {
