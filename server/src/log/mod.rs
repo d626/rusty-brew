@@ -51,9 +51,11 @@ impl Logger {
         Ok(logger)
     }
 
-    // Shpuld this function be allowed to fail
-    pub fn add_entry(entry: LogEntry) {
-        unimplemented!();
+    // Should this function be allowed to fail
+    pub fn add_entry(&mut self, entry: LogEntry) -> std::io::Result<()> {
+        let mut file = self.open(false)?;
+        file.write(entry.to_string().as_bytes())?;
+        Ok(())
     }
 
     pub fn get_name(&self) -> String {
@@ -77,6 +79,16 @@ impl Logger {
             .append(true)
             .create(create)
             .open(&self.name)
+    }
+}
+
+impl ToString for LogEntry {
+    fn to_string(&self) -> String {
+        format!("{},{},{},{}\n",
+                self.timestamp.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs(),
+                self.reference, self.measured_value,
+                self.output)
+        // Shoud I use absolute or relative timestamps? (how many batches can be brewed in a day?)
     }
 }
 
