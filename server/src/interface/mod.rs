@@ -17,6 +17,11 @@ use super::log::LogEntry;
 type ResourceMap = HashMap<String, Controller>;
 
 // Called by the application at startup, not part of the API
+
+/// Initialises the web server.
+/// Takes a list of controllers that will be exposed on the internet.
+/// Note that this function does not return, unless there were an error starting
+/// the server.
 pub fn init_interface<S, O>(resources: Vec<Controller>)
 where S: 'static + Sensor,
       O: 'static + Output
@@ -40,29 +45,44 @@ where S: 'static + Sensor,
             start_controlling
         ])
         .launch();
-    unimplemented!();
 }
 
-// get /logs
+/// Returns a list of all available logs.
+/// Route: GET /logs
+/// Returns a list of names of available logs encoded in JSON.
+/// ```no_run
+/// ["log1", "log2", "log3"]
+/// ```
+/// A specific log can be retrieved by sending a GET request to /logs/<name>
 #[get("/logs")]
 fn get_list_of_logs() -> Json<Vec<String>> {
     Json(log::get_list_of_logs())
 }
 
-// get /logs/<name>
 // use query string? i.e. get /logs?<name>
 // can fail if <name> does not exist
+
+/// Returns the log <name>
+/// Route: GET /logs/<name>
+/// Returns a logfile.
+/// Fails if the log specified doesn't exist.
+// TODO: Write about the format of the logfile
 #[get("/logs/<name>")]
 fn get_log(name: String) -> io::Result<File> {
     log::get_log(name)
 }
 
-// delete /logs/<name>
 // can fail if <name> does not exist
+
+/// Deletes the specified logfile
+/// Route: DELETE /logs/<name>
+/// Fails if the logfile is in use by a currently running process.
 #[delete("/logs/<name>")]
 fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
     for (_, controller) in &(*resources) {
-        if controller.get_name().is_none() || controller.get_name().unwrap() == name {
+        if controller.get_name().is_none()
+           || controller.get_name().unwrap() == name
+        {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 "The logfile is in use, stop the process to release the logfile")
@@ -74,14 +94,23 @@ fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
     fs::remove_file(format!("logs/{}.log", name))
 }
 
-// get /<resource>/values
 // probably not use query string?
 // can fail if <resource> does not exist
 // The resources are made at startup, but values does only get updated when the
 // resource is in use, there are therefore no guarantee that current_values are
 // up to date (but it will be the last meassured values)
-#[get("/<resource>/values")]
-fn get_current_values(resource: String, resources: State<ResourceMap>) -> Option<LogEntry> {
+// The rank is needed due to conflict with GET /reference_series/<name>
+
+/// Returns the current state of the given controller
+/// Route: GET /<resource>/values
+/// Note that ypu only get the last logged values, new values are not produced
+/// on request.
+/// Responds with a 404 if the given controller doesn't exist, or isn't in use.
+/// The names of all resources can be found using GET /resources.
+#[get("/<resource>/values", rank = 2)]
+fn get_current_values(resource: String, resources: State<ResourceMap>)
+                      -> Option<LogEntry>
+{
     if let Some(controller) = resources.get(&resource) {
         controller.get_last_log_entry()
     } else {
@@ -89,14 +118,19 @@ fn get_current_values(resource: String, resources: State<ResourceMap>) -> Option
     }
 }
 
-// get /resources
+/// Returns a list of the name of all controllers.
+/// Route: GET /resources
+/// The controllers are made at compile time, and each got its own Sensor and
+/// Output. The names can be used in any request taking <resource>.
 #[get("/resources")]
 fn get_list_of_resources(resources: State<ResourceMap>) -> Json<Vec<String>> {
     // Return a list of keys in the managed map
     Json((*resources).keys().cloned().collect())
 }
 
-// get /reference_series
+/// Returns a list of saved reference series.
+/// Route: GET /reference_series
+/// Returns a JSON encoded list of names of saved reference series.
 #[get("/reference_series")]
 fn get_list_of_reference_series() -> Json<Vec<String>> {
     // Return a list of all stored ReferanceSeries
@@ -110,32 +144,50 @@ fn get_list_of_reference_series() -> Json<Vec<String>> {
     Json(result)
 }
 
-// get /reference_series/<name>
 // can fail if <name> does not exist
-#[get("/reference_series/<name>")]
+// TODO: return File?
+
+/// Returns the given reference series.
+/// Route: GET /reference_series/<name>
+/// Returns the JSON encoded reference series given by <name>.
+/// A list of available reference series can be found by sending a GET request
+/// to /reference_series. Fails if the given reference series doesn't exist, or
+/// other filesystem error.
+#[get("/reference_series/<name>", rank = 1)]
 fn get_reference_series(name: String) -> io::Result<String> {
-    fs::read_to_string(name)
+    fs::read_to_string(format!("references/{}", name))
 }
 
 // delete /reference_series/<name>
 // can fail if <name> does not exist
+
+/// Deletes the given reference series.
+/// Route: DELETE /reference_series/<name>
+/// Fails if the reference series doesn't exist or other filesystem error.
 #[delete("/reference_series/<name>")]
 fn delete_reference_series(name: String) -> io::Result<()> {
     fs::remove_file(format!("/reference_series/{}", name))
 }
 
-// post /reference_series/<name> data = <reference_series>
 // can fail if <name> exists
+
+/// Save a new reference series
+/// Route: POST /reference_series/<name>
+/// Fails if a reference series with the same name already exists.
 #[post("/reference_series/<name>", data = "<reference_series>")]
-fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>) -> io::Result<()> {
+fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
+                         -> io::Result<()>
+{
     // If file exists, return error
-    for file in fs::read_dir("reference").expect("Unable to read reference folder") {
+    for file in fs::read_dir("references").expect("Unable to read reference folder") {
         if file?.file_name().into_string().unwrap() == name {
-            return Err(io::Error::new(io::ErrorKind::AlreadyExists, "The reference series already exists"));
+            return Err(io::Error::new(io::ErrorKind::AlreadyExists,
+                                      "The reference series already exists"));
         }
     }
+    // TODO: Check that received JSON is valid
     // Write json to file
-    fs::write(format!("reference/{}", name), reference_series.to_string())
+    fs::write(format!("references/{}", name), reference_series.to_string())
 }
 
 // get /start/<resource>/<profile>
