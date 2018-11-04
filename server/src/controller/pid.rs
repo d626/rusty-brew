@@ -1,6 +1,10 @@
 use std::default::Default;
 
-struct Reference(i32);
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Reference {
+    pub duration: u64,
+    pub temp: u32
+}
 
 #[derive(Clone)]
 pub struct PidParameters {
