@@ -2,7 +2,7 @@ use std::fs;
 
 use super::sensor::Sensor;
 
-struct DS18B20 {
+pub struct DS18B20 {
     id: String,
 }
 

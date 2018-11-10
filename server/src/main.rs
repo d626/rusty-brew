@@ -15,11 +15,19 @@ extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_json;
 
+extern crate linux_embedded_hal;
+extern crate embedded_hal;
+
 mod controller;
 use controller::Controller;
 use controller::sensor::Sensor;
 use controller::output::Output;
 use controller::mock::*;
+
+//#[cfg(target = "armv7-unknown-linux-gnueabihf")]
+use controller::ds18b20;
+//#[cfg(target = "armv7-unknown-linux-gnueabihf")]
+use controller::led;
 
 use controller::pid::Reference;
 use controller::ReferenceSeries;
@@ -31,6 +39,18 @@ mod interface;
 fn main() {
     let date = Local::now();
     println!("Date: {}", date.format("%Y-%m-%d"));
+    let sensor1 = ds18b20::DS18B20::new("28-000009eab19f".to_owned());
+    let sensor2 = ds18b20::DS18B20::new("28-000009eb40fe".to_owned());
+    let mut output = led::LedOutput::new(20, 21, 50);
+    loop {
+        output.set(30.0);
+        println!("Temp1: {}", sensor1.read());
+        println!("Temp2: {}", sensor2.read());
+        output.set(0.0);
+    }
+}
+
+fn test_start_interface() {
     let mock_state = MockInternalState::new();
     let mock_sensor = MockTemperatureSensor::new(mock_state.clone());
     let mock_output = MockOutput::new(mock_state.clone());
@@ -40,7 +60,6 @@ fn main() {
     let series = ReferenceSeries::new(vec![reference]);
     println!("{}", serde_json::to_string(&series).unwrap());
     interface::init_interface::<MockTemperatureSensor, MockOutput>(vec![mock_controller]);
-    loop {}
 }
 
 fn test_mock_system() {
