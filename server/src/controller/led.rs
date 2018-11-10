@@ -5,6 +5,7 @@ use std::ops::Drop;
 
 use linux_embedded_hal::Pin;
 use embedded_hal::digital::OutputPin;
+use sysfs_gpio::Direction;
 
 use super::output::Output;
 
@@ -22,6 +23,9 @@ impl LedOutput {
 
         up_pin.export().expect("Unable to export up_pin");
         down_pin.export().expect("Unable to export down_pin");
+
+        up_pin.set_direction(Direction::Low).expect("Unable to set direction of up_pin");
+        down_pin.set_direction(Direction::High).expect("Unable to set direction of down_pin");
 
         LedOutput{up_pin, down_pin, pulse_width, state: 0}
     }
