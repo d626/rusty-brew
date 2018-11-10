@@ -43,12 +43,13 @@ fn main() {
     let sensor1 = ds18b20::DS18B20::new("28-000009eab19f".to_owned());
     let sensor2 = ds18b20::DS18B20::new("28-000009eb40fe".to_owned());
     let mut output = led::LedOutput::new(20, 21, 50);
-    loop {
+    for _ in 0..10 {
         output.set(30.0);
         println!("Temp1: {}", sensor1.read());
         println!("Temp2: {}", sensor2.read());
         output.set(0.0);
     }
+    output.set(100.0);
 }
 
 fn test_start_interface() {

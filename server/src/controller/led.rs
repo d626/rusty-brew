@@ -51,8 +51,7 @@ impl LedOutput {
 
 impl Output for LedOutput {
     fn set(&mut self, output: f32) {
-        let output = if (output as u32) < 0 { 0 } else { output as u32 };
-        let output = if output > 100 { 100 } else { output };
+        let output = if (output as u32) > 100 { 100 } else { output as u32 };
         let output = output / 10;
 
         match output.cmp(&self.state) {
