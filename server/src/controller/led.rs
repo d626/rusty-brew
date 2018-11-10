@@ -25,7 +25,7 @@ impl LedOutput {
         down_pin.export().expect("Unable to export down_pin");
 
         up_pin.set_direction(Direction::Low).expect("Unable to set direction of up_pin");
-        down_pin.set_direction(Direction::High).expect("Unable to set direction of down_pin");
+        down_pin.set_direction(Direction::Low).expect("Unable to set direction of down_pin");
 
         LedOutput{up_pin, down_pin, pulse_width, state: 0}
     }
@@ -51,7 +51,8 @@ impl LedOutput {
 
 impl Output for LedOutput {
     fn set(&mut self, output: f32) {
-        let output = (output / 100.0) as u32;
+        let output = if (output as u32) < 0 { 0 } else { output as u32 };
+        let output = if output > 100 { 100 } else { output };
         let output = output / 10;
 
         match output.cmp(&self.state) {
@@ -61,7 +62,7 @@ impl Output for LedOutput {
                 }
             }
             Ordering::Greater => {
-                for _ in output..self.state {
+                for _ in self.state..output {
                     self.increase_output();
                 }
             }
