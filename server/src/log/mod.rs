@@ -52,6 +52,7 @@ impl Logger {
     }
 
     // Should this function be allowed to fail
+    // TODO: Change to store JSON
     pub fn add_entry(&mut self, entry: LogEntry) -> std::io::Result<()> {
         let mut file = self.open(false)?;
         file.write(entry.to_string().as_bytes())?;
@@ -105,4 +106,32 @@ pub fn get_list_of_logs() -> Vec<String> {
                     .expect("Logname not a valid string"));
     }
     result
+}
+
+// TODO: Replace old logger (and finish implement this)
+pub struct NewLogger {
+    last_entry: Option<LogEntry>,
+    name: String,
+}
+
+impl NewLogger {
+    pub fn new(name: String) -> NewLogger {
+        // Make file
+        NewLogger {
+            name,
+            last_entry: None,
+        }
+    }
+
+    pub fn add_entry(&mut self, reference: f32, input: f32, output: f32) {
+        unimplemented!();
+    }
+
+    pub fn get_last_entry(&self) -> Option<LogEntry> {
+        self.last_entry.clone()
+    }
+
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
 }

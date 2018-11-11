@@ -40,6 +40,9 @@ mod interface;
 fn main() {
     let date = Local::now();
     println!("Date: {}", date.format("%Y-%m-%d"));
+}
+
+fn test_physical() {
     let sensor1 = ds18b20::DS18B20::new("28-000009eab19f".to_owned());
     let sensor2 = ds18b20::DS18B20::new("28-000009eb40fe".to_owned());
     let mut output = led::LedOutput::new(20, 21, 50);
@@ -56,7 +59,7 @@ fn test_start_interface() {
     let mock_state = MockInternalState::new();
     let mock_sensor = MockTemperatureSensor::new(mock_state.clone());
     let mock_output = MockOutput::new(mock_state.clone());
-    let mock_controller = Controller::new(mock_sensor, mock_output);
+    let mock_controller = Controller::new(mock_sensor, mock_output, Default::default());
 
     let reference = Reference { duration: 23, temp: 59 };
     let series = ReferenceSeries::new(vec![reference]);
@@ -80,7 +83,7 @@ fn test_mock_system() {
         // let mock_controller = controller::Controller::new(mock_sensor, mock_output);
 
         // let controllers = vec![mock_controller];
-        let mock_controller = Controller::new(mock_sensor, mock_output);
+        let mock_controller = Controller::new(mock_sensor, mock_output, Default::default());
     }
     std::thread::sleep(std::time::Duration::from_millis(10*1000));
     println!("Finished");

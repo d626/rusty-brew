@@ -9,6 +9,8 @@ use std::thread;
 use std::sync::Mutex;
 use std::sync::Arc;
 
+use std::marker::PhantomData;
+
 use rocket::Request;
 use rocket::Data;
 
@@ -53,85 +55,90 @@ impl Display for ReferenceSeries {
     }
 }
 
-enum ControllerCommand {
-    StartControlling(Mutex<ReferenceSeries>),
-    StopControlling
-}
+use log::NewLogger;
+use std::sync::mpsc::channel;
+use std::fs;
 
-#[derive(Clone)]
 pub struct Controller {
-    last_log_entry: Arc<Mutex<Option<LogEntry>>>,
-    reference_series: Arc<Mutex<Option<ReferenceSeries>>>,
-    logger: Option<Logger>,
-    parameters: PidParameters,
+    logger: Arc<Mutex<Option<NewLogger>>>,
+    sensor: Arc<Mutex<Box<'static + Sensor>>>,
+    output: Arc<Mutex<Box<'static + Output>>>,
+    pid_parameters: PidParameters,
 }
 
 impl Controller {
-    // TODO: Complete this function
-    /// Spawns a thread that lasts forever
-    pub fn new<S, O>(sensor: S, mut output: O) -> Controller
-    where S: 'static + Sensor + Send,
-          O: 'static + Output + Send {
-        let controller = Controller{
-            last_log_entry: Arc::new(Mutex::new(None)),
-            reference_series: Arc::new(Mutex::new(None)),
-            logger: None,
-            parameters: PidParameters::new(1.0, 0.0, 0.0),
-        };
-        let reference_series = controller.reference_series.clone();
-        let last_log_entry = controller.last_log_entry.clone();
-        let parameters = controller.parameters.clone();
-        let mut pid = Pid::new(&controller.parameters);
-        thread::spawn(move || {
-            let start = Instant::now();
-            let mut current_reference = None;
-            loop {
-                if let Some(ref referance_series) = *reference_series.lock()
-                    .expect("Unable to lock reference series mutex") {
-                        let mut elapsed = start.elapsed();
-                    for Reference{duration, temp} in &referance_series.0 {
-                        if let Some(difference) =
-                            elapsed.checked_sub(Duration::from_secs(*duration)) {
-                            elapsed = difference;
-                        } else {
-                            current_reference = Some(temp.clone());
-                            break; // We have found our current reference
-                        }
-                    }
-                    if let Some(reference) = current_reference {
-                        let x = sensor.read();
-                        let u = pid.pid(x, reference as f32);
-                        output.set(x);
-                        // logger
-                    }
-                    // do logging
-                } else {
-                    // Turn off, notify user?
-                }
-            }
-        });
-        controller
+    pub fn new<S, O>(sensor: S, output: O, pid_parameters: PidParameters) -> Controller
+    where S: 'static + Sensor + Sync + Send,
+          O: 'static + Output + Sync + Send,
+    {
+        Controller {
+            pid_parameters,
+            sensor: Arc::new(Mutex::new(Box::new(sensor))),
+            output: Arc::new(Mutex::new(Box::new(output))),
+            logger: Arc::new(Mutex::new(None)),
+        }
     }
 
-    // name should include the name of the resource used, and be URL friendly
-    pub fn start(self, name: String, referance: ReferenceSeries) {
-        let logger = Logger::new(name, referance.clone());
-        // Start controlling the temperature
-        // return a channel used to get status updates from the logger
-        *self.reference_series.lock()
-            .expect("Unable to lock reference series mutex") = Some(referance);
+    // TODO: Document this function ALOT!
+    pub fn start(&mut self, reference_name: String) -> std::io::Result<()> {
+        // Make new thread to make function return immediately
+        let logger = NewLogger::new(reference_name.clone()); // TODO: This can fail if file exists, add date to name
+        *self.logger.lock().unwrap() = Some(logger);
+
+        // TODO: replace file operations with calls to reference module
+        let reference_series: ReferenceSeries = serde_json::from_str(
+            &fs::read_to_string(format!("references/{}", reference_name))?
+        ).unwrap(); // TODO: This can fail
+
+        let logger = Arc::clone(&self.logger);
+        let output = Arc::clone(&self.output);
+        let sensor = Arc::clone(&self.sensor);
+        let parameters = self.pid_parameters.clone();
+
+        thread::spawn(move || {
+            let (r_tx, r_rx) = channel();
+            thread::spawn(move || {
+                for reference in reference_series.0 {
+                    r_tx.send(reference.temp).unwrap(); // This should always work
+                    thread::sleep(Duration::from_secs(reference.duration));
+                }
+            });
+
+            let logger_ref = Arc::clone(&logger);
+            let output_ref = Arc::clone(&output);
+
+            thread::spawn(move || {
+                let mut pid = Pid::new(&parameters);
+                loop {
+                    if let Ok(r) = r_rx.recv()  {
+                        let y = sensor.lock().unwrap().read();
+                        let u = pid.pid(y, r as f32);
+                        output_ref.lock().unwrap().set(u);
+                        let logger = &mut *logger_ref.lock().unwrap();
+                        logger.as_mut().unwrap().add_entry(r as f32, y, u);
+                    } else {
+                        return;
+                    }
+                };
+            }).join().unwrap(); // The thread should not panic, unless something has gone horribly wrong
+
+            output.lock().unwrap().turn_off();
+            *logger.lock().unwrap() = None;
+        });
+
+        Ok(())
     }
 
     pub fn get_last_log_entry(&self) -> Option<LogEntry> {
-        self.last_log_entry
-            .lock()
-            .expect("Unable to lock last_log_entry mutex")
-            .clone()
+        match *self.logger.lock().unwrap() {
+            Some(ref logger) => logger.get_last_entry(),
+            None => None
+        }
     }
 
-    pub fn get_name(&self) -> Option<String> {
-        match &self.logger {
-            Some(logger) => Some(logger.get_name()),
+    pub fn get_name_of_current_process(&self) -> Option<String> {
+        match *self.logger.lock().unwrap() {
+            Some(ref logger) => Some(logger.get_name()),
             None => None
         }
     }

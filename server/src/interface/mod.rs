@@ -2,6 +2,7 @@ use std::fs;
 use std::fs::File;
 use std::io;
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use rocket::Rocket;
 use rocket::State;
@@ -14,7 +15,7 @@ use super::controller::output::Output;
 use super::log;
 use super::log::LogEntry;
 
-type ResourceMap = HashMap<String, Controller>;
+type ResourceMap = HashMap<String, Mutex<Controller>>;
 
 // Called by the application at startup, not part of the API
 
@@ -22,14 +23,14 @@ type ResourceMap = HashMap<String, Controller>;
 /// Takes a list of controllers that will be exposed on the internet.
 /// Note that this function does not return, unless there were an error starting
 /// the server.
-pub fn init_interface<S, O>(resources: Vec<Controller>)
+pub fn init_interface<S, O>(resources: Vec<Controller>) // TODO: take the map instead
 where S: 'static + Sensor,
       O: 'static + Output
 {
     // Make a managed map of resources (using a name as index) (using a macro?)
     // the values need to be trait objects to make it possible to have different
     // kinds of controllers (with different types of Sensor and Output)
-    let resources: HashMap<String, Controller> = HashMap::new();
+    let resources: ResourceMap = HashMap::new();
     rocket::ignite()
         .manage(resources)
         .mount("/", routes![
@@ -80,8 +81,8 @@ fn get_log(name: String) -> io::Result<File> {
 #[delete("/logs/<name>")]
 fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
     for (_, controller) in &(*resources) {
-        if controller.get_name().is_none()
-           || controller.get_name().unwrap() == name
+        if controller.lock().unwrap().get_name_of_current_process().is_none()
+           || controller.lock().unwrap().get_name_of_current_process().unwrap() == name
         {
             return Err(io::Error::new(
                 io::ErrorKind::Other,
@@ -112,7 +113,7 @@ fn get_current_values(resource: String, resources: State<ResourceMap>)
                       -> Option<LogEntry>
 {
     if let Some(controller) = resources.get(&resource) {
-        controller.get_last_log_entry()
+        controller.lock().unwrap().get_last_log_entry()
     } else {
         None
     }
@@ -195,6 +196,10 @@ fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
 // should it include the name of the beer?
 // should Controller and ReferenceSeries impl some trait, or shoult this be a helper function taking input from somewhere else?
 #[get("/start/<resource>/<profile>")]
-fn start_controlling(resource: String, profile: String) {
-    unimplemented!();
+fn start_controlling(resource: String, profile: String, resource_map: State<ResourceMap>) -> Option<()> {
+    use std::borrow::BorrowMut;
+    let controller = resource_map.get(&resource)?;
+    controller.lock().unwrap().start(profile).unwrap(); // TODO: find a way to return this error, rather than panic
+
+    Some(())
 }
