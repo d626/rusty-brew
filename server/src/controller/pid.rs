@@ -1,4 +1,5 @@
 use std::default::Default;
+use std::f32;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Reference {
@@ -11,14 +12,16 @@ pub struct PidParameters {
     kp: f32,
     ki: f32,
     kd: f32,
+    max_integrator: f32,
 }
 
 impl PidParameters {
-    pub fn new(kp: f32, ki: f32, kd: f32) -> PidParameters {
+    pub fn new(kp: f32, ki: f32, kd: f32, max_integrator: f32) -> PidParameters {
         PidParameters{
             kp,
             ki,
             kd,
+            max_integrator,
         }
     }
 
@@ -34,6 +37,7 @@ impl Default for PidParameters {
             kp: 1.0,
             ki: 0.0,
             kd: 0.0,
+            max_integrator: f32::INFINITY,
         }
     }
 }
@@ -55,7 +59,11 @@ impl Pid {
     pub fn pid(&mut self, input: f32, reference: f32) -> f32 {
         let (kp, ki, kd) = self.parameters.get_parameters();
         let error = reference - input;
-        self.accumulator += error;
+        self.accumulator = if self.accumulator + error > self.parameters.max_integrator {
+            self.accumulator + error
+        } else {
+            self.parameters.max_integrator
+        };
         let derivative = input - self.previous_input;
         self.previous_input = input;
         kp*error + ki*self.accumulator + kd*derivative
