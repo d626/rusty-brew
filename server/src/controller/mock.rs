@@ -14,7 +14,7 @@ const ROOM_TEMPERATURE: f32 = 20.0;
 /// Struct representing the system, used for simulation
 #[derive(Clone)]
 pub struct MockInternalState {
-    kill_tx: mpsc::Sender<()>,
+    kill_tx: Arc<Mutex<mpsc::Sender<()>>>,
     temperature_mutex: Arc<Mutex<f32>>,
     output_mutex: Arc<Mutex<f32>>
 }
@@ -28,7 +28,7 @@ impl MockInternalState {
         let temperature_mutex = Arc::new(Mutex::new(20.0));
         let output_mutex = Arc::new(Mutex::new(20.0));
         let mock_internal = MockInternalState {
-            kill_tx,
+            kill_tx: Arc::new(Mutex::new(kill_tx)),
             temperature_mutex: temperature_mutex.clone(),
             output_mutex: output_mutex.clone(),
         };
@@ -98,5 +98,9 @@ impl Output for MockOutput {
     fn set(&mut self, output: f32) {
         *self.0.output_mutex.lock()
             .expect("Unable to set output_mutex") = output;
+    }
+
+    fn turn_off(&mut self) {
+        *self.0.output_mutex.lock().unwrap() = ROOM_TEMPERATURE;
     }
 }

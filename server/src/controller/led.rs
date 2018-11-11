@@ -70,10 +70,8 @@ impl Output for LedOutput {
             }
         }
     }
-}
 
-impl Drop for LedOutput {
-    fn drop(&mut self) {
+    fn turn_off(&mut self) {
         for _ in self.state..0 {
             self.decrease_output();
         }
