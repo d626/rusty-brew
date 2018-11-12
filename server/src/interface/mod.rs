@@ -110,10 +110,14 @@ fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
 /// The names of all resources can be found using GET /resources.
 #[get("/<resource>/values", rank = 2)]
 fn get_current_values(resource: String, resources: State<ResourceMap>)
-                      -> Option<LogEntry>
+                      -> Option<Json<LogEntry>>
 {
     if let Some(controller) = resources.get(&resource) {
-        controller.lock().unwrap().get_last_log_entry()
+        if let Some(entry) = controller.lock().unwrap().get_last_log_entry() {
+            Some(Json(entry))
+        } else {
+            None
+        }
     } else {
         None
     }
@@ -197,9 +201,13 @@ fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
 // should Controller and ReferenceSeries impl some trait, or shoult this be a helper function taking input from somewhere else?
 #[get("/start/<resource>/<profile>")]
 fn start_controlling(resource: String, profile: String, resource_map: State<ResourceMap>) -> Option<()> {
-    use std::borrow::BorrowMut;
+    // TODO: replace file operations with calls to reference module
+    let reference_series: ReferenceSeries = serde_json::from_str(
+        &fs::read_to_string(format!("references/{}", profile)).unwrap()
+    ).unwrap(); // TODO: Replace TODOs
+
     let controller = resource_map.get(&resource)?;
-    controller.lock().unwrap().start(profile).unwrap(); // TODO: find a way to return this error, rather than panic
+    controller.lock().unwrap().start(profile, reference_series).unwrap(); // TODO: find a way to return this error, rather than panic
 
     Some(())
 }
