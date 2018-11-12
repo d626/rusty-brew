@@ -40,6 +40,30 @@ mod interface;
 fn main() {
     let date = Local::now();
     println!("Date: {}", date.format("%Y-%m-%d"));
+
+    test_pid();
+
+    std::thread::sleep(std::time::Duration::from_secs(200));
+
+    println!("Finished");
+}
+
+fn test_pid() {
+    let environment = MockInternalState::new();
+    let sensor = MockTemperatureSensor::new(environment.clone());
+    let output = MockOutput::new(environment.clone());
+
+    let parameters = controller::pid::PidParameters::default();
+    let mut controller = Controller::new(sensor, output, parameters);
+
+    let reference_series = vec![
+        Reference{duration: 60, temp: 55},
+        Reference{duration: 30, temp: 60},
+        Reference{duration: 30, temp: 75},
+    ];
+    let reference_series = ReferenceSeries::new(reference_series);
+
+    controller.start("foo".to_owned(), reference_series).unwrap();
 }
 
 fn test_physical() {
