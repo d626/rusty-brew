@@ -58,13 +58,18 @@ impl Pid {
     }
     pub fn pid(&mut self, input: f32, reference: f32) -> f32 {
         let (kp, ki, kd) = self.parameters.get_parameters();
+
         let error = reference - input;
-        self.accumulator = if self.accumulator + error > self.parameters.max_integrator {
-            self.accumulator + error
+
+        let tmp_accumulator = self.accumulator + error;
+        self.accumulator = if tmp_accumulator < self.parameters.max_integrator {
+            tmp_accumulator
         } else {
             self.parameters.max_integrator
         };
+
         let derivative = input - self.previous_input;
+
         self.previous_input = input;
         kp*error + ki*self.accumulator + kd*derivative
     }

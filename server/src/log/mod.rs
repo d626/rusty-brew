@@ -51,7 +51,8 @@ impl Log {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct LogEntry {
-    timestamp: SystemTime,
+    /// Milliseconds since UNIX_EPOCH
+    timestamp: u64,
     reference: f32,
     input: f32,
     output: f32,
@@ -59,11 +60,13 @@ pub struct LogEntry {
 
 impl LogEntry {
     pub fn new(reference: f32, input: f32, output: f32) -> LogEntry {
+        let since_epoch = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+        let timestamp = since_epoch.as_secs() * 1000 + since_epoch.subsec_millis() as u64;
         LogEntry {
             reference,
             input,
             output,
-            timestamp: SystemTime::now(),
+            timestamp,
         }
     }
 }
@@ -84,7 +87,7 @@ impl Logger {
 
         let name = format!("logs/{}-{}.json", reference, date);
 
-        fs::write(&name, serde_json::to_string(&log).unwrap())
+        fs::write(&name, serde_json::to_string(&log).expect("Unable to make JSON"))
             .expect(&format!("Unable asdfasdfas to write logfile {}", name));
 
         Logger {
@@ -94,10 +97,12 @@ impl Logger {
     }
 
     pub fn add_entry(&mut self, reference: f32, input: f32, output: f32) {
+        let tmp_str = fs::read_to_string(&self.name)
+            .expect(&format!("Unable to open lkjhlkjhlhl logfile: {}", self.name));
         let mut log: Log = serde_json::from_str(
             &fs::read_to_string(&self.name)
                 .expect(&format!("Unable to open lkjhlkjhlhl logfile: {}", self.name))
-        ).unwrap(); // We wrote this file, and it should be valid JSON
+        ).expect(&format!("Invalid JSON in logfile: {}", tmp_str)); // We wrote this file, and it should be valid JSON
 
         log.add_entry(LogEntry::new(reference, input, output));
 

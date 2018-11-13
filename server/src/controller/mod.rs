@@ -8,8 +8,8 @@ use std::fmt;
 use std::thread;
 use std::sync::Mutex;
 use std::sync::Arc;
-
-use std::marker::PhantomData;
+use std::sync::mpsc::TryRecvError;
+use std::sync::mpsc::channel;
 
 use rocket::Request;
 use rocket::Data;
@@ -55,23 +55,22 @@ impl Display for ReferenceSeries {
     }
 }
 
-use std::sync::mpsc::channel;
-use std::fs;
-
 pub struct Controller {
     logger: Arc<Mutex<Option<Logger>>>,
     sensor: Arc<Mutex<Box<'static + Sensor>>>,
     output: Arc<Mutex<Box<'static + Output>>>,
+    frequency: u64,
     pid_parameters: PidParameters,
 }
 
 impl Controller {
-    pub fn new<S, O>(sensor: S, output: O, pid_parameters: PidParameters) -> Controller
+    pub fn new<S, O>(sensor: S, output: O, pid_parameters: PidParameters, frequency: u64) -> Controller
     where S: 'static + Sensor + Sync + Send,
           O: 'static + Output + Sync + Send,
     {
         Controller {
             pid_parameters,
+            frequency,
             sensor: Arc::new(Mutex::new(Box::new(sensor))),
             output: Arc::new(Mutex::new(Box::new(output))),
             logger: Arc::new(Mutex::new(None)),
@@ -84,16 +83,34 @@ impl Controller {
         let logger = Logger::new(reference_name.clone()); // TODO: This can fail if file exists, add date to name
         *self.logger.lock().expect("Unable to lock logger") = Some(logger);
 
-
         let logger = Arc::clone(&self.logger);
         let output = Arc::clone(&self.output);
         let sensor = Arc::clone(&self.sensor);
         let parameters = self.pid_parameters.clone();
+        let period = 1000 / self.frequency;
+        let period = Duration::from_millis(period);
+
+        println!("period: {:?}", period);
 
         thread::spawn(move || {
             let (r_tx, r_rx) = channel();
+            let (timer_tx, timer_rx) = channel();
+
+            // Spawn thread that generates ticks for the pid
+            thread::spawn(move || {
+                loop {
+                    thread::sleep(period);
+                    match timer_tx.send(()) {
+                        Ok(_) => {}, // no op
+                        Err(_) => return
+                    };
+                }
+            });
+
+            // Spawn thread that keeps track of the reference
             thread::spawn(move || {
                 for reference in reference_series.0 {
+                    println!("new reference: {}", reference.temp);
                     r_tx.send(reference.temp).expect("r_tx failed"); // This should always work
                     thread::sleep(Duration::from_secs(reference.duration));
                 }
@@ -102,24 +119,36 @@ impl Controller {
             let logger_ref = Arc::clone(&logger);
             let output_ref = Arc::clone(&output);
 
-            // TODO: Make calculate output at a given interval, rather than when we get a new reference
-            // TODO: Figure out why this crashes:thread '<unnamed>' panicked at 'called `Result::unwrap()` on an `Err` value: Error("invalid type: null, expected f32", line: 1, column: 148)', libcore/result.rs:1009:5
-            // note: Run with `RUST_BACKTRACE=1` for a backtrace.
-                // thread '<unnamed>' panicked at 'Unable to join pid thread: Any', libcore/result.rs:1009:5
-
+            // Spawn pid thread
             thread::spawn(move || {
                 let mut pid = Pid::new(&parameters);
+                let mut old_r = match r_rx.recv() {
+                    Ok(r) => r,
+                    Err(_) => return, // Should an empty reference series fail?
+                };
+
                 loop {
-                    if let Ok(r) = r_rx.recv()  {
-                        println!("r: {}", r);
-                        let y = sensor.lock().expect("Unable to lock sensor").read();
-                        let u = pid.pid(y, r as f32);
-                        output_ref.lock().expect("Unable to lock output").set(u);
-                        let logger = &mut *logger_ref.lock().expect("Unable to lock logger");
-                        logger.as_mut().expect("Unable to take logger as mut").add_entry(r as f32, y, u);
-                    } else {
-                        return;
-                    }
+                    let _ = timer_rx.recv().expect("Timer thread has died prematurely");
+                    let r = match r_rx.try_recv() {
+                        Ok(reference) => {
+                            println!("new referenc received: {}", reference);
+                            old_r = reference;
+                            reference
+                        },
+                        Err(e) => match e {
+                            TryRecvError::Empty => old_r,
+                            TryRecvError::Disconnected => return,
+                        }
+                    };
+
+                    println!("r: {}", r);
+                    let y = sensor.lock().expect("Unable to lock sensor").read();
+                    println!("y: {}", y);
+                    let u = pid.pid(y, r as f32);
+                    println!("u: {}", u);
+                    output_ref.lock().expect("Unable to lock output").set(u);
+                    let logger = &mut *logger_ref.lock().expect("Unable to lock logger");
+                    logger.as_mut().expect("Unable to take logger as mut").add_entry(r as f32, y, u);
                 };
             }).join().expect("Unable to join pid thread"); // The thread should not panic, unless something has gone horribly wrong
 

@@ -54,7 +54,7 @@ fn test_pid() {
     let output = MockOutput::new(environment.clone());
 
     let parameters = controller::pid::PidParameters::default();
-    let mut controller = Controller::new(sensor, output, parameters);
+    let mut controller = Controller::new(sensor, output, parameters, 60);
 
     let reference_series = vec![
         Reference{duration: 60, temp: 55},
@@ -83,7 +83,7 @@ fn test_start_interface() {
     let mock_state = MockInternalState::new();
     let mock_sensor = MockTemperatureSensor::new(mock_state.clone());
     let mock_output = MockOutput::new(mock_state.clone());
-    let mock_controller = Controller::new(mock_sensor, mock_output, Default::default());
+    let mock_controller = Controller::new(mock_sensor, mock_output, Default::default(), 60);
 
     let reference = Reference { duration: 23, temp: 59 };
     let series = ReferenceSeries::new(vec![reference]);
@@ -107,7 +107,7 @@ fn test_mock_system() {
         // let mock_controller = controller::Controller::new(mock_sensor, mock_output);
 
         // let controllers = vec![mock_controller];
-        let mock_controller = Controller::new(mock_sensor, mock_output, Default::default());
+        let mock_controller = Controller::new(mock_sensor, mock_output, Default::default(), 60);
     }
     std::thread::sleep(std::time::Duration::from_millis(10*1000));
     println!("Finished");

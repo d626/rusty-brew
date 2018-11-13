@@ -101,6 +101,6 @@ impl Output for MockOutput {
     }
 
     fn turn_off(&mut self) {
-        *self.0.output_mutex.lock().unwrap() = ROOM_TEMPERATURE;
+        *self.0.output_mutex.lock().expect("Unable to lock output mutex") = ROOM_TEMPERATURE;
     }
 }
