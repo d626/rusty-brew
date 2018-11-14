@@ -23,7 +23,7 @@ type ResourceMap = HashMap<String, Mutex<Controller>>;
 /// Takes a list of controllers that will be exposed on the internet.
 /// Note that this function does not return, unless there were an error starting
 /// the server.
-pub fn init_interface<S, O>(resources: ResourceMap) // TODO: take the map instead
+pub fn init_interface<S, O>(resources: ResourceMap) 
 where S: 'static + Sensor,
       O: 'static + Output
 {
@@ -63,7 +63,19 @@ fn get_list_of_logs() -> Json<Vec<String>> {
 /// Route: GET /logs/<name>
 /// Returns a logfile.
 /// Fails if the log specified doesn't exist.
-// TODO: Write about the format of the logfile
+/// The logfile contains a JSON encoded Log, on the following format:
+/// {
+///   "reference": String, // The name of the reference series used
+///   "entries": [
+///     {
+///       "timestamp": Integer, // # milliseconds sice UNIX_EPOCH
+///       "reference": Floatind point number, // Reference at given point of time
+///       "input": Floating point number, // Meassured value at given point of time
+///       "output": Floating point number // Output of the controller at given point of time
+///     },
+///     ... // The rest of the entries are skipped
+///   ]
+/// }
 #[get("/logs/<name>")]
 fn get_log(name: String) -> io::Result<File> {
     log::get_log(name)
