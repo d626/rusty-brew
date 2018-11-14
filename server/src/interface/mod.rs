@@ -23,14 +23,10 @@ type ResourceMap = HashMap<String, Mutex<Controller>>;
 /// Takes a list of controllers that will be exposed on the internet.
 /// Note that this function does not return, unless there were an error starting
 /// the server.
-pub fn init_interface<S, O>(resources: Vec<Controller>) // TODO: take the map instead
+pub fn init_interface<S, O>(resources: ResourceMap) // TODO: take the map instead
 where S: 'static + Sensor,
       O: 'static + Output
 {
-    // Make a managed map of resources (using a name as index) (using a macro?)
-    // the values need to be trait objects to make it possible to have different
-    // kinds of controllers (with different types of Sensor and Output)
-    let resources: ResourceMap = HashMap::new();
     rocket::ignite()
         .manage(resources)
         .mount("/", routes![

@@ -19,6 +19,9 @@ extern crate linux_embedded_hal;
 extern crate embedded_hal;
 extern crate sysfs_gpio;
 
+use std::collections::HashMap;
+use std::sync::Mutex;
+
 mod controller;
 use controller::Controller;
 use controller::sensor::Sensor;
@@ -88,7 +91,10 @@ fn test_start_interface() {
     let reference = Reference { duration: 23, temp: 59 };
     let series = ReferenceSeries::new(vec![reference]);
     println!("{}", serde_json::to_string(&series).unwrap());
-    interface::init_interface::<MockTemperatureSensor, MockOutput>(vec![mock_controller]);
+    let mut controllers = HashMap::new();
+    controllers.insert("Mock".to_owned(), Mutex::new(mock_controller));
+
+    interface::init_interface::<MockTemperatureSensor, MockOutput>(controllers);
 }
 
 fn test_mock_system() {
