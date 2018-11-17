@@ -22,7 +22,7 @@ extern crate sysfs_gpio;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-mod controller;
+pub mod controller;
 use controller::Controller;
 use controller::sensor::Sensor;
 use controller::output::Output;
@@ -36,17 +36,14 @@ use controller::led;
 use controller::pid::Reference;
 use controller::ReferenceSeries;
 
-mod log;
+pub mod log;
 
-mod interface;
+pub mod interface;
 
 fn main() {
     let date = Local::now();
-    println!("Date: {}", date.format("%Y-%m-%d"));
 
-    test_pid();
-
-    std::thread::sleep(std::time::Duration::from_secs(200));
+    test_start_interface();
 
     println!("Finished");
 }
@@ -67,6 +64,7 @@ fn test_pid() {
     let reference_series = ReferenceSeries::new(reference_series);
 
     controller.start("foo".to_owned(), reference_series).unwrap();
+    std::thread::sleep(std::time::Duration::from_secs(200));
 }
 
 fn test_physical() {

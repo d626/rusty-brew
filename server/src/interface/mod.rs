@@ -17,6 +17,8 @@ use super::log::LogEntry;
 
 type ResourceMap = HashMap<String, Mutex<Controller>>;
 
+// TODO: Make custom result type, to give better error messages
+
 // Called by the application at startup, not part of the API
 
 /// Initialises the web server.
@@ -148,7 +150,7 @@ fn get_list_of_resources(resources: State<ResourceMap>) -> Json<Vec<String>> {
 fn get_list_of_reference_series() -> Json<Vec<String>> {
     // Return a list of all stored ReferanceSeries
     let mut result = Vec::new();
-    for file in fs::read_dir("logs").expect("Unable to read log folder") {
+    for file in fs::read_dir("references").expect("Unable to read references folder") {
         result.push(file.expect("Fail while reading log folder")
                     .file_name()
                     .into_string()
@@ -199,8 +201,19 @@ fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
         }
     }
     // TODO: Check that received JSON is valid
+    // println!("recv'd reference JSON:{:?}", reference_series.into_inner());
     // Write json to file
-    fs::write(format!("references/{}", name), reference_series.to_string())
+    let json = match serde_json::to_string(&reference_series.into_inner()) {
+        Ok(json) => json,
+        Err(_) => {
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "The logfile is in use, stop the process to release the logfile")
+            );
+        }
+    };
+    println!("revcd to string: {:?}", json);
+    fs::write(format!("references/{}", name), json)
 }
 
 // get /start/<resource>/<profile>
@@ -212,7 +225,7 @@ fn start_controlling(resource: String, profile: String, resource_map: State<Reso
     // TODO: replace file operations with calls to reference module
     let reference_series: ReferenceSeries = serde_json::from_str(
         &fs::read_to_string(format!("references/{}", profile)).unwrap()
-    ).unwrap(); // TODO: Replace TODOs
+    ).unwrap(); // TODO: Replace unwraps
 
     let controller = resource_map.get(&resource)?;
     controller.lock().unwrap().start(profile, reference_series).unwrap(); // TODO: find a way to return this error, rather than panic

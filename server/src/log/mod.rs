@@ -16,7 +16,7 @@ use rocket::response::Responder;
 pub type LoggerChannel = Sender<LogEntry>;
 
 pub fn get_log(name: String) -> io::Result<File> {
-    File::open(name)
+    File::open(format!("logs/{}", name))
 }
 
 pub fn get_list_of_logs() -> Vec<String> {
@@ -85,7 +85,7 @@ impl Logger {
         let date = Local::now();
         let date = date.format("%Y-%m-%d");
 
-        let name = format!("logs/{}-{}.json", reference, date);
+        let name = format!("logs/{}-{}", reference, date);
 
         fs::write(&name, serde_json::to_string(&log).expect("Unable to make JSON"))
             .expect(&format!("Unable asdfasdfas to write logfile {}", name));

@@ -1,7 +1,7 @@
 use std::default::Default;
 use std::f32;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Reference {
     pub duration: u64,
     pub temp: u32
@@ -74,4 +74,3 @@ impl Pid {
         kp*error + ki*self.accumulator + kd*derivative
     }
 }
-

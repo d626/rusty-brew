@@ -33,7 +33,7 @@ use self::output::Output;
 use self::pid::*;
 use super::log::{Logger, LogEntry, LoggerChannel};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReferenceSeries( pub Vec<Reference> );
 
 impl ReferenceSeries {
