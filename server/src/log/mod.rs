@@ -49,7 +49,7 @@ impl Log {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
     /// Milliseconds since UNIX_EPOCH
     timestamp: u64,
@@ -72,6 +72,7 @@ impl LogEntry {
 }
 
 // TODO: Replace old logger (and finish implement this)
+#[derive(Debug)]
 pub struct Logger {
     last_entry: Option<LogEntry>,
     name: String,
@@ -103,11 +104,13 @@ impl Logger {
             &fs::read_to_string(&self.name)
                 .expect(&format!("Unable to open lkjhlkjhlhl logfile: {}", self.name))
         ).expect(&format!("Invalid JSON in logfile: {}", tmp_str)); // We wrote this file, and it should be valid JSON
+        let entry = LogEntry::new(reference, input, output);
 
-        log.add_entry(LogEntry::new(reference, input, output));
+        log.add_entry(entry.clone());
 
         fs::write(&self.name, serde_json::to_string(&log).unwrap())
             .expect(&format!("Unable to write logfile {}", self.name));
+        self.last_entry = Some(entry);
     }
 
     pub fn get_last_entry(&self) -> Option<LogEntry> {

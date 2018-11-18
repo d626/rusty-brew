@@ -90,10 +90,12 @@ fn get_log(name: String) -> io::Result<File> {
 /// Fails if the logfile is in use by a currently running process.
 #[delete("/logs/<name>")]
 fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
+    println!("Deleting log {}", name);
     for (_, controller) in &(*resources) {
-        if controller.lock().unwrap().get_name_of_current_process().is_none()
-           || controller.lock().unwrap().get_name_of_current_process().unwrap() == name
+        if !controller.lock().unwrap().get_name_of_current_process().is_none()
+           && controller.lock().unwrap().get_name_of_current_process().unwrap() == name
         {
+            println!("Log in use");
             return Err(io::Error::new(
                 io::ErrorKind::Other,
                 "The logfile is in use, stop the process to release the logfile")
@@ -102,7 +104,8 @@ fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
     }
     // As no controller in uses the file, it can safely be deleted
     // Move this to log module?
-    fs::remove_file(format!("logs/{}.log", name))
+    println!("Removing file");
+    fs::remove_file(format!("logs/{}", name))
 }
 
 // probably not use query string?
@@ -122,7 +125,10 @@ fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
 fn get_current_values(resource: String, resources: State<ResourceMap>)
                       -> Option<Json<LogEntry>>
 {
+    println!("Getting current values for: {}", resource);
     if let Some(controller) = resources.get(&resource) {
+        println!("Resource exists");
+        println!("Last entry: {:?}", controller.lock().unwrap().get_last_log_entry());
         if let Some(entry) = controller.lock().unwrap().get_last_log_entry() {
             Some(Json(entry))
         } else {
@@ -181,7 +187,7 @@ fn get_reference_series(name: String) -> io::Result<String> {
 /// Fails if the reference series doesn't exist or other filesystem error.
 #[delete("/reference_series/<name>")]
 fn delete_reference_series(name: String) -> io::Result<()> {
-    fs::remove_file(format!("/reference_series/{}", name))
+    fs::remove_file(format!("references/{}", name))
 }
 
 // can fail if <name> exists
@@ -223,6 +229,7 @@ fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
 #[get("/start/<resource>/<profile>")]
 fn start_controlling(resource: String, profile: String, resource_map: State<ResourceMap>) -> Option<()> {
     // TODO: replace file operations with calls to reference module
+    println!("Starting controlling");
     let reference_series: ReferenceSeries = serde_json::from_str(
         &fs::read_to_string(format!("references/{}", profile)).unwrap()
     ).unwrap(); // TODO: Replace unwraps

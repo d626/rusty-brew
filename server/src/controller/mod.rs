@@ -81,7 +81,9 @@ impl Controller {
     pub fn start(&mut self, reference_name: String, reference_series: ReferenceSeries) -> std::io::Result<()> {
         // Make new thread to make function return immediately
         let logger = Logger::new(reference_name.clone()); // TODO: This can fail if file exists, add date to name
-        *self.logger.lock().expect("Unable to lock logger") = Some(logger);
+        {
+            *self.logger.lock().expect("Unable to lock logger") = Some(logger);
+        }
 
         let logger = Arc::clone(&self.logger);
         let output = Arc::clone(&self.output);
@@ -91,13 +93,16 @@ impl Controller {
         let period = Duration::from_millis(period);
 
         println!("period: {:?}", period);
+        println!("reference series: {:?}", reference_series);
 
         thread::spawn(move || {
+            println!("Thread spawned");
             let (r_tx, r_rx) = channel();
             let (timer_tx, timer_rx) = channel();
 
             // Spawn thread that generates ticks for the pid
             thread::spawn(move || {
+                println!("Timer spawned");
                 loop {
                     thread::sleep(period);
                     match timer_tx.send(()) {
@@ -109,6 +114,7 @@ impl Controller {
 
             // Spawn thread that keeps track of the reference
             thread::spawn(move || {
+                println!("References spawned");
                 for reference in reference_series.0 {
                     println!("new reference: {}", reference.temp);
                     r_tx.send(reference.temp).expect("r_tx failed"); // This should always work
@@ -121,6 +127,7 @@ impl Controller {
 
             // Spawn pid thread
             thread::spawn(move || {
+                println!("Pid spawned");
                 let mut pid = Pid::new(&parameters);
                 let mut old_r = match r_rx.recv() {
                     Ok(r) => r,
@@ -141,17 +148,17 @@ impl Controller {
                         }
                     };
 
-                    println!("r: {}", r);
                     let y = sensor.lock().expect("Unable to lock sensor").read();
-                    println!("y: {}", y);
                     let u = pid.pid(y, r as f32);
-                    println!("u: {}", u);
                     output_ref.lock().expect("Unable to lock output").set(u);
-                    let logger = &mut *logger_ref.lock().expect("Unable to lock logger");
-                    logger.as_mut().expect("Unable to take logger as mut").add_entry(r as f32, y, u);
+                    {
+                        let logger = &mut *logger_ref.lock().expect("Unable to lock logger");
+                        logger.as_mut().expect("Unable to take logger as mut").add_entry(r as f32, y, u);
+                    }
                 };
             }).join().expect("Unable to join pid thread"); // The thread should not panic, unless something has gone horribly wrong
 
+            println!("Controller finished");
             output.lock().expect("Unable to lock output").turn_off();
             *logger.lock().expect("Unable to lock logger") = None;
         });
