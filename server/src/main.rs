@@ -1,19 +1,13 @@
-#![allow(unreachable_code)]
-#![allow(unused_variables)]
-#![allow(dead_code)]
-#![allow(unused_imports)]
-
 #![feature(proc_macro_hygiene, decl_macro)]
 
 #[macro_use] extern crate rocket;
 extern crate rocket_contrib;
 
-extern crate chrono;
-use chrono::Local;
-
 extern crate serde;
 #[macro_use] extern crate serde_derive;
 extern crate serde_json;
+
+extern crate chrono;
 
 extern crate linux_embedded_hal;
 extern crate embedded_hal;
@@ -28,9 +22,7 @@ use controller::sensor::Sensor;
 use controller::output::Output;
 use controller::mock::*;
 
-//#[cfg(target = "armv7-unknown-linux-gnueabihf")]
 use controller::ds18b20;
-//#[cfg(target = "armv7-unknown-linux-gnueabihf")]
 use controller::led;
 
 use controller::pid::Reference;
@@ -40,14 +32,12 @@ pub mod log;
 
 pub mod interface;
 
+/// Program entry point
 fn main() {
-    let date = Local::now();
-
     test_start_interface();
-
-    println!("Finished");
 }
 
+/// Function for testing the controller
 fn test_pid() {
     let environment = MockInternalState::new();
     let sensor = MockTemperatureSensor::new(environment.clone());
@@ -67,6 +57,7 @@ fn test_pid() {
     std::thread::sleep(std::time::Duration::from_secs(200));
 }
 
+/// Function for testing HW sensor and output
 fn test_physical() {
     let sensor1 = ds18b20::DS18B20::new("28-000009eab19f".to_owned());
     let sensor2 = ds18b20::DS18B20::new("28-000009eb40fe".to_owned());
@@ -80,6 +71,7 @@ fn test_physical() {
     output.set(100.0);
 }
 
+/// Function for testing the server, using mocked input and output
 fn test_start_interface() {
     let mock_state = MockInternalState::new();
     let mock_sensor = MockTemperatureSensor::new(mock_state.clone());
@@ -95,6 +87,7 @@ fn test_start_interface() {
     interface::init_interface::<MockTemperatureSensor, MockOutput>(controllers);
 }
 
+/// Function for testing mocked input and output
 fn test_mock_system() {
     {
         let mock_state = MockInternalState::new();
@@ -111,12 +104,13 @@ fn test_mock_system() {
         // let mock_controller = controller::Controller::new(mock_sensor, mock_output);
 
         // let controllers = vec![mock_controller];
-        let mock_controller = Controller::new(mock_sensor, mock_output, Default::default(), 60);
+        let _mock_controller = Controller::new(mock_sensor, mock_output, Default::default(), 60);
     }
     std::thread::sleep(std::time::Duration::from_millis(10*1000));
     println!("Finished");
 }
 
+/// Function for testing if we can get a list of logs
 fn test_get_logs() {
     for name in log::get_list_of_logs() {
         println!("{}", name);

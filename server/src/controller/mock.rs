@@ -1,5 +1,5 @@
 //! Module implementing a mock temperature sensor used for testing on devices
-//! that is not connected to real hw.
+//! that is not connected to real HW.
 
 use std::time;
 use std::thread;

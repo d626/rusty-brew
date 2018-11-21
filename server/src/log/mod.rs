@@ -1,20 +1,13 @@
+//! Module containig all functionality needed for logging of process variables.
+
 use std::time::SystemTime;
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::io::Write;
-use std::sync::mpsc::Sender;
-
-use super::controller::ReferenceSeries;
 
 use chrono::prelude::*;
 
-use rocket::Request;
-use rocket::response;
-use rocket::response::Responder;
-
-pub type LoggerChannel = Sender<LogEntry>;
-
+/// Function for getting a logfile.
 pub fn get_log(name: String) -> io::Result<File> {
     File::open(format!("logs/{}", name))
 }
@@ -30,6 +23,8 @@ pub fn get_list_of_logs() -> Vec<String> {
     result
 }
 
+/// Structure representing a log. It has a field storing the name of the
+/// reference series used, and a vector of LogEntrys.
 #[derive(Serialize, Deserialize)]
 pub struct Log {
     reference: String,
@@ -37,6 +32,7 @@ pub struct Log {
 }
 
 impl Log {
+    /// Makes a new log. reference is the name of the reference series used.
     pub fn new(reference: &String) -> Log {
         Log {
             reference: reference.clone(),
@@ -49,6 +45,10 @@ impl Log {
     }
 }
 
+/// A single entry in a Log. Stores a timestamp with millisecond precision
+/// (as number of milliseconds since UNIX_EPOCH), the reference value at that
+/// point in time, the meassured input and the calculated output. Note that due
+/// to the possibly descreet nature of the output the actual output set might differ.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LogEntry {
     /// Milliseconds since UNIX_EPOCH
@@ -71,7 +71,7 @@ impl LogEntry {
     }
 }
 
-// TODO: Replace old logger (and finish implement this)
+/// Struct providing functionality to make a log.
 #[derive(Debug)]
 pub struct Logger {
     last_entry: Option<LogEntry>,
@@ -79,6 +79,11 @@ pub struct Logger {
 }
 
 impl Logger {
+    // TODO: Make not panic if logfile already exists
+
+    /// Constructor for Logger. This function makes a new log with the name %r-%Y-%m-%d,
+    /// where %r is the name of the reference series used, %Y-%m-%d is the date on ISO 8601
+    /// format. Note that is the fiel already exists this function panics.
     pub fn new(reference: String) -> Logger {
         // TODO: Make file
         let log = Log::new(&reference);
@@ -89,7 +94,7 @@ impl Logger {
         let name = format!("logs/{}-{}", reference, date);
 
         fs::write(&name, serde_json::to_string(&log).expect("Unable to make JSON"))
-            .expect(&format!("Unable asdfasdfas to write logfile {}", name));
+            .expect(&format!("Unable to write logfile {}", name));
 
         Logger {
             name,
@@ -99,10 +104,10 @@ impl Logger {
 
     pub fn add_entry(&mut self, reference: f32, input: f32, output: f32) {
         let tmp_str = fs::read_to_string(&self.name)
-            .expect(&format!("Unable to open lkjhlkjhlhl logfile: {}", self.name));
+            .expect(&format!("Unable to open logfile: {}", self.name));
         let mut log: Log = serde_json::from_str(
             &fs::read_to_string(&self.name)
-                .expect(&format!("Unable to open lkjhlkjhlhl logfile: {}", self.name))
+                .expect(&format!("Unable to open logfile: {}", self.name))
         ).expect(&format!("Invalid JSON in logfile: {}", tmp_str)); // We wrote this file, and it should be valid JSON
         let entry = LogEntry::new(reference, input, output);
 
@@ -119,22 +124,5 @@ impl Logger {
 
     pub fn get_name(&self) -> String {
         self.name.clone()
-    }
-
-
-
-    fn new_log(&self, reference_series: ReferenceSeries) -> io::Result<()> {
-        let mut logfile = self.open(true)?;
-        // TODO: what to do if the file exists? or other error?
-        // It could return an (std::io)Error, or on succsess a ()
-        logfile.write(reference_series.to_string().as_bytes())?;
-        Ok(())
-    }
-
-    fn open(&self, create: bool) -> std::io::Result<File> {
-        fs::OpenOptions::new()
-            .append(true)
-            .create(create)
-            .open(&self.name)
     }
 }

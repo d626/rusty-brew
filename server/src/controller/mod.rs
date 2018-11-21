@@ -1,7 +1,6 @@
 //! Module containig all the temperature controller logic
 
 use std::time::Duration;
-use std::time::Instant;
 use std::string::ToString;
 use std::fmt::Display;
 use std::fmt;
@@ -11,19 +10,11 @@ use std::sync::Arc;
 use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::channel;
 
-use rocket::Request;
-use rocket::Data;
-
-use serde::{Serialize, Deserialize};
-use serde::de::DeserializeOwned;
-
 pub mod sensor;
 pub mod output;
 pub mod mock;
 
-//#[cfg(target = "armv7-unknown-linux-gnueabihf")]
 pub mod ds18b20;
-//#[cfg(target = "armv7-unknown-linux-gnueabihf")]
 pub mod led;
 
 pub mod pid;
@@ -31,8 +22,9 @@ pub mod pid;
 use self::sensor::Sensor;
 use self::output::Output;
 use self::pid::*;
-use super::log::{Logger, LogEntry, LoggerChannel};
+use super::log::{Logger, LogEntry};
 
+/// Struct containing a series of References.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReferenceSeries( pub Vec<Reference> );
 
@@ -55,6 +47,7 @@ impl Display for ReferenceSeries {
     }
 }
 
+/// Struct representing a controller, with its own input, output and tuning.
 pub struct Controller {
     logger: Arc<Mutex<Option<Logger>>>,
     sensor: Arc<Mutex<Box<'static + Sensor>>>,
@@ -64,7 +57,13 @@ pub struct Controller {
 }
 
 impl Controller {
-    pub fn new<S, O>(sensor: S, output: O, pid_parameters: PidParameters, frequency: u64) -> Controller
+    /// Constructor for Controller.
+    /// sensor is the object used to measure the process,
+    /// while output is the object used to control the process.
+    /// pid_parameters is the parameters used to tune the PID controller.
+    /// Frequency is the frequency the controller is running on.
+    pub fn new<S, O>(sensor: S, output: O, pid_parameters: PidParameters, frequency: u64)
+                     -> Controller
     where S: 'static + Sensor + Sync + Send,
           O: 'static + Output + Sync + Send,
     {
@@ -77,10 +76,26 @@ impl Controller {
         }
     }
 
-    // TODO: Document this function ALOT!
-    pub fn start(&mut self, reference_name: String, reference_series: ReferenceSeries) -> std::io::Result<()> {
-        // Make new thread to make function return immediately
-        let logger = Logger::new(reference_name.clone()); // TODO: This can fail if file exists, add date to name
+    /// This fuctions starts the controller, which will follow the given reference series.
+    /// At the moment this function will never return an Err value. It can however panic
+    /// if a logfile with the same name (same reference series and date).
+    ///
+    /// The function spawns three threads:
+    /// - A timer thread
+    /// - A reference thread
+    /// - A pid thread
+    ///
+    /// These threads comunicate with each other using channels. The timer thread
+    /// sends a message to the other two threads with a frequency given by the
+    /// Controller object. The reference thread keeps track of how far we are in
+    /// the process, and sends an updated reference to the pid thread when there is one.
+    /// The pid thread takes its references from the reference thread, and calculates
+    /// and sets a new output for each tick given by the timer thread.
+    /// All these threads works from inside a fourth thread responisble for cleanup
+    /// when the process is finished.
+    pub fn start(&mut self, reference_name: String, reference_series: ReferenceSeries)
+                 -> std::io::Result<()> {
+        let logger = Logger::new(reference_name.clone());
         {
             *self.logger.lock().expect("Unable to lock logger") = Some(logger);
         }
@@ -92,9 +107,10 @@ impl Controller {
         let period = 1000 / self.frequency;
         let period = Duration::from_millis(period);
 
-        println!("period: {:?}", period);
-        println!("reference series: {:?}", reference_series);
+        // println!("period: {:?}", period);
+        // println!("reference series: {:?}", reference_series);
 
+        // Make new thread to make function return immediately
         thread::spawn(move || {
             println!("Thread spawned");
             let (r_tx, r_rx) = channel();
@@ -131,7 +147,7 @@ impl Controller {
                 let mut pid = Pid::new(&parameters);
                 let mut old_r = match r_rx.recv() {
                     Ok(r) => r,
-                    Err(_) => return, // Should an empty reference series fail?
+                    Err(_) => return, // TODO: Should an empty reference series fail?
                 };
 
                 loop {
@@ -166,6 +182,8 @@ impl Controller {
         Ok(())
     }
 
+    /// Function for getting the last saved log entry. Note if there are no process
+    /// running there are no log entry stored.
     pub fn get_last_log_entry(&self) -> Option<LogEntry> {
         match *self.logger.lock().expect("Unable to lock logger") {
             Some(ref logger) => logger.get_last_entry(),
@@ -173,6 +191,8 @@ impl Controller {
         }
     }
 
+    /// Function for getting the name of the current process/the reference series
+    /// used by the current process.
     pub fn get_name_of_current_process(&self) -> Option<String> {
         match *self.logger.lock().expect("Unable to lock logger") {
             Some(ref logger) => Some(logger.get_name()),

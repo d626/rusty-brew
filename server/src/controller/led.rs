@@ -1,7 +1,8 @@
+//! Module containing a output that blinks a LED for increasing output,
+//! and another for decreasing output.
 use std::cmp::Ordering;
 use std::thread::sleep;
 use std::time::Duration;
-use std::ops::Drop;
 
 use linux_embedded_hal::Pin;
 use embedded_hal::digital::OutputPin;
@@ -9,14 +10,24 @@ use sysfs_gpio::Direction;
 
 use super::output::Output;
 
+/// A struct representing the LEDs used as an output.
 pub struct LedOutput {
+    /// Pin connected to the LED signifying an increase in output.
     up_pin: Pin,
+    /// Pin connected to the LED signifying an decrease in output.
     down_pin: Pin,
+    /// Field used to keep track of what the current output is.
     state: u32,
+    /// Field used to configure how long an LED blink is.
     pulse_width: u64,
 }
 
 impl LedOutput {
+    /// Constructor for LedOutput.
+    /// up_pin and down_pin is the pin number (as seen in Linux, not the physica
+    /// pin number) connected to the up LED an down LED.
+    /// pulse_width is the duration the LEDs are on when "increasing" or
+    /// "decreasing" the output in milliseconds.
     pub fn new(up_pin: u64, down_pin: u64, pulse_width: u64) -> LedOutput {
         let up_pin = Pin::new(up_pin);
         let down_pin = Pin::new(down_pin);

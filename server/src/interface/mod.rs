@@ -2,11 +2,9 @@ use std::fs;
 use std::fs::File;
 use std::io;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
-use rocket::Rocket;
 use rocket::State;
-use rocket::Request;
 use rocket_contrib::json::Json;
 
 use super::controller::{Controller, ReferenceSeries};
@@ -117,7 +115,7 @@ fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
 
 /// Returns the current state of the given controller
 /// Route: GET /<resource>/values
-/// Note that ypu only get the last logged values, new values are not produced
+/// Note that you only get the last logged values, new values are not produced
 /// on request.
 /// Responds with a 404 if the given controller doesn't exist, or isn't in use.
 /// The names of all resources can be found using GET /resources.
@@ -226,6 +224,12 @@ fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
 // can fail if <resource> OR <profile> does not exist
 // should it include the name of the beer?
 // should Controller and ReferenceSeries impl some trait, or shoult this be a helper function taking input from somewhere else?
+
+/// Start the given resource, with the given reference profile.
+/// Route: GET /start/<resource>/<profile>
+/// <resource> is the name of the controller to be used (i.e. one of the names from
+/// GET /resources). <profile> is the name of a reference profile stored using
+/// POST /references<name>. To get a list of stored refence profiles use GET /reference_series.
 #[get("/start/<resource>/<profile>")]
 fn start_controlling(resource: String, profile: String, resource_map: State<ResourceMap>) -> Option<()> {
     // TODO: replace file operations with calls to reference module
