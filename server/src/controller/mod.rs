@@ -24,7 +24,7 @@ pub mod pid;
 use self::sensor::Sensor;
 use self::output::Output;
 use self::pid::*;
-use super::log::{Logger, LogEntry};
+use log::{Logger, LogEntry};
 
 /// Function for getting a list of all reference series that are stored.
 pub fn get_list_of_reference_series() -> Vec<String> {

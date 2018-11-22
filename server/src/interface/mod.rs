@@ -7,12 +7,12 @@ use std::sync::Mutex;
 use rocket::State;
 use rocket_contrib::json::Json;
 
-use super::controller;
-use super::controller::{Controller, ReferenceSeries};
-use super::controller::sensor::Sensor;
-use super::controller::output::Output;
-use super::log;
-use super::log::LogEntry;
+use controller;
+use controller::{Controller, ReferenceSeries};
+use controller::sensor::Sensor;
+use controller::output::Output;
+use log;
+use log::LogEntry;
 
 type ResourceMap = HashMap<String, Mutex<Controller>>;
 
