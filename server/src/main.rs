@@ -84,7 +84,7 @@ fn test_start_interface() {
     let mut controllers = HashMap::new();
     controllers.insert("Mock".to_owned(), Mutex::new(mock_controller));
 
-    interface::init_interface::<MockTemperatureSensor, MockOutput>(controllers);
+    interface::init_interface(controllers);
 }
 
 /// Function for testing mocked input and output
