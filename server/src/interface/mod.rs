@@ -1,4 +1,4 @@
-use std::fs;
+// use std::fs;
 use std::fs::File;
 use std::io;
 use std::collections::HashMap;
@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use rocket::State;
 use rocket_contrib::json::Json;
 
+use super::controller;
 use super::controller::{Controller, ReferenceSeries};
 use super::controller::sensor::Sensor;
 use super::controller::output::Output;
@@ -16,6 +17,7 @@ use super::log::LogEntry;
 type ResourceMap = HashMap<String, Mutex<Controller>>;
 
 // TODO: Make custom result type, to give better error messages
+// TODO: Move JSON encoding into respective modules, don't pass Strings around unnecessary
 
 // Called by the application at startup, not part of the API
 
@@ -103,7 +105,7 @@ fn delete_log(name: String, resources: State<ResourceMap>) -> io::Result<()> {
     // As no controller in uses the file, it can safely be deleted
     // Move this to log module?
     println!("Removing file");
-    fs::remove_file(format!("logs/{}", name))
+    log::delete_log(name)
 }
 
 // probably not use query string?
@@ -152,15 +154,7 @@ fn get_list_of_resources(resources: State<ResourceMap>) -> Json<Vec<String>> {
 /// Returns a JSON encoded list of names of saved reference series.
 #[get("/reference_series")]
 fn get_list_of_reference_series() -> Json<Vec<String>> {
-    // Return a list of all stored ReferanceSeries
-    let mut result = Vec::new();
-    for file in fs::read_dir("references").expect("Unable to read references folder") {
-        result.push(file.expect("Fail while reading log folder")
-                    .file_name()
-                    .into_string()
-                    .expect("Logname not a valid string"));
-    }
-    Json(result)
+    Json(controller::get_list_of_reference_series())
 }
 
 // can fail if <name> does not exist
@@ -174,7 +168,7 @@ fn get_list_of_reference_series() -> Json<Vec<String>> {
 /// other filesystem error.
 #[get("/reference_series/<name>", rank = 1)]
 fn get_reference_series(name: String) -> io::Result<String> {
-    fs::read_to_string(format!("references/{}", name))
+    controller::get_reference_series(&name)
 }
 
 // delete /reference_series/<name>
@@ -185,7 +179,7 @@ fn get_reference_series(name: String) -> io::Result<String> {
 /// Fails if the reference series doesn't exist or other filesystem error.
 #[delete("/reference_series/<name>")]
 fn delete_reference_series(name: String) -> io::Result<()> {
-    fs::remove_file(format!("references/{}", name))
+    controller::delete_reference_series(name)
 }
 
 // can fail if <name> exists
@@ -198,8 +192,8 @@ fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
                          -> io::Result<()>
 {
     // If file exists, return error
-    for file in fs::read_dir("references").expect("Unable to read reference folder") {
-        if file?.file_name().into_string().unwrap() == name {
+    for file in controller::get_list_of_reference_series() {
+        if file == name {
             return Err(io::Error::new(io::ErrorKind::AlreadyExists,
                                       "The reference series already exists"));
         }
@@ -207,17 +201,7 @@ fn post_reference_series(name: String, reference_series: Json<ReferenceSeries>)
     // TODO: Check that received JSON is valid
     // println!("recv'd reference JSON:{:?}", reference_series.into_inner());
     // Write json to file
-    let json = match serde_json::to_string(&reference_series.into_inner()) {
-        Ok(json) => json,
-        Err(_) => {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "The logfile is in use, stop the process to release the logfile")
-            );
-        }
-    };
-    println!("revcd to string: {:?}", json);
-    fs::write(format!("references/{}", name), json)
+    controller::store_reference_series(name, reference_series.into_inner())
 }
 
 // get /start/<resource>/<profile>
@@ -235,8 +219,8 @@ fn start_controlling(resource: String, profile: String, resource_map: State<Reso
     // TODO: replace file operations with calls to reference module
     println!("Starting controlling");
     let reference_series: ReferenceSeries = serde_json::from_str(
-        &fs::read_to_string(format!("references/{}", profile)).unwrap()
-    ).unwrap(); // TODO: Replace unwraps
+        &controller::get_reference_series(&profile).expect("Unable to read stored profile")
+    ).unwrap();
 
     let controller = resource_map.get(&resource)?;
     controller.lock().unwrap().start(profile, reference_series).unwrap(); // TODO: find a way to return this error, rather than panic

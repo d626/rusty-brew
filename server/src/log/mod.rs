@@ -12,6 +12,7 @@ pub fn get_log(name: String) -> io::Result<File> {
     File::open(format!("logs/{}", name))
 }
 
+/// Function for getting a list of all stored logs.
 pub fn get_list_of_logs() -> Vec<String> {
     let mut result = Vec::new();
     for file in fs::read_dir("logs").expect("Unable to read log folder") {
@@ -22,6 +23,13 @@ pub fn get_list_of_logs() -> Vec<String> {
     }
     result
 }
+
+/// Function for deleting a log.
+pub fn delete_log(name: String) -> io::Result<()> {
+    fs::remove_file(format!("logs/{}", name))
+}
+
+
 
 /// Structure representing a log. It has a field storing the name of the
 /// reference series used, and a vector of LogEntrys.

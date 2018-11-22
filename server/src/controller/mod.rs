@@ -9,6 +9,8 @@ use std::sync::Mutex;
 use std::sync::Arc;
 use std::sync::mpsc::TryRecvError;
 use std::sync::mpsc::channel;
+use std::fs;
+use std::io;
 
 pub mod sensor;
 pub mod output;
@@ -23,6 +25,37 @@ use self::sensor::Sensor;
 use self::output::Output;
 use self::pid::*;
 use super::log::{Logger, LogEntry};
+
+/// Function for getting a list of all reference series that are stored.
+pub fn get_list_of_reference_series() -> Vec<String> {
+    // Return a list of all stored ReferanceSeries
+    let mut result = Vec::new();
+    for file in fs::read_dir("references").expect("Unable to read references folder") {
+        result.push(file.expect("Fail while reading log folder")
+                    .file_name()
+                    .into_string()
+                    .expect("Logname not a valid string"));
+    }
+    result
+}
+
+/// Function for getting a stored reference series.
+pub fn get_reference_series(name: &String) -> io::Result<String> {
+    fs::read_to_string(format!("references/{}", name))
+}
+
+/// Function for deleting a stored reference series.
+pub fn delete_reference_series(name: String) -> io::Result<()> {
+    fs::remove_file(format!("references/{}", name))
+}
+
+/// Function for storing a new reference series.
+pub fn store_reference_series(name: String, reference_series: ReferenceSeries)
+                              -> io::Result<()> {
+    fs::write(format!("references/{}", name),
+              serde_json::to_string(&reference_series)
+                  .expect("Invalid reference series JSON"))
+}
 
 /// Struct containing a series of References.
 #[derive(Debug, Clone, Serialize, Deserialize)]
