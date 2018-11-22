@@ -9,8 +9,6 @@ use rocket_contrib::json::Json;
 
 use controller;
 use controller::{Controller, ReferenceSeries};
-use controller::sensor::Sensor;
-use controller::output::Output;
 use log;
 use log::LogEntry;
 
@@ -25,9 +23,7 @@ type ResourceMap = HashMap<String, Mutex<Controller>>;
 /// Takes a list of controllers that will be exposed on the internet.
 /// Note that this function does not return, unless there were an error starting
 /// the server.
-pub fn init_interface<S, O>(resources: ResourceMap) 
-where S: 'static + Sensor,
-      O: 'static + Output
+pub fn init_interface(resources: ResourceMap) 
 {
     rocket::ignite()
         .manage(resources)
