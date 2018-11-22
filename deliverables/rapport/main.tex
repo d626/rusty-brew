@@ -1,0 +1,54 @@
+\documentclass[a4 paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[norsk]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{parskip} %skip the indent of a new paragraph.
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage[per-mode=symbol]{siunitx}
+\usepackage{epstopdf}
+\usepackage[super]{nth}
+\usepackage[toc,page]{appendix}
+\usepackage{enumerate}
+\usepackage{verbatim}
+\usepackage[ruled, vlined, linesnumbered]{algorithm2e}
+\usepackage{mathtools}
+\usepackage{gensymb}
+\usepackage{textcomp}
+\usepackage{pdfpages}
+%\lstset{language=Matlab, frame=single, breaklines=true,numbers=left, keywordstyle=\color{blue},rulecolor=\color{black},commentstyle=\color{gray}}
+
+\usepackage{cleveref}
+\usepackage[disable]{todonotes}
+
+%% Brukes for tabeller (av likninger)
+\usepackage{tabularx}
+\def\tabularxcolumn#1{m{#1}}
+
+\newcommand{\mbf}[1]{\mathbf[#1]}
+\newcommand{\partialderiv}[2]{\frac{\partial{#1}}{\partial{#2}}} % prints partial derivative as a fraction
+
+\DeclareUnicodeCharacter{2212}{-} % Needed to import matplolib figures without trouble
+
+\renewcommand{\appendixname}{Vedlegg}
+
+\begin{document}
+    \title{Dokumentasjon TTK8}
+    \author{Didrik Rokhaug}
+    \maketitle
+
+    \input{text/sammendrag.tex}
+    \input{text/innledning.tex}
+    \input{text/spec.tex}
+    \input{text/design.tex}
+    \input{text/implementasjon.tex}
+    \input{text/test.tex}
+    \input{text/konklusjon.tex}
+
+    \appendix
+    \input{text/vedlegg.tex}
+\end{document}

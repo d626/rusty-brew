@@ -1,0 +1,43 @@
+\section{Vedlegg}
+\todo[inline]{Hvilke filer inneholder hvilke rutiner}
+
+Serveren har følgende mappestruktur:
+    \begin{itemize}
+        \item Cargo.lock
+        \item Cargo.toml
+        \item build.rs
+        \item src
+        \begin{itemize}
+            \item main.rs
+            \item interface
+            \begin{itemize}
+                \item mod.rs
+            \end{itemize}
+            \item log
+            \begin{itemize}
+                \item mod.rs
+            \end{itemize}
+            \item controller
+            \begin{itemize}
+                \item mod.rs
+                \item pid.rs
+                \item mock.rs
+                \item led.rs
+                \item ds18b20.rs
+                \item output
+                \begin{itemize}
+                    \item mod.rs
+                \end{itemize}
+                \item sensor
+                \begin{itemize}
+                    \item mod.rs
+                \end{itemize}
+            \end{itemize}
+        \end{itemize}
+    \end{itemize}
+
+    I tilleg er api-client.py som inneholder kilent biblioteket i Python, og scriptet som ble brukt til testing. Det kan også produseres mer dokumentasjon fra koden ved å bruke cargo doc.
+
+api-client.py inneholder Python klient biblioteket, og scriptet som er blitt brukt til testing.
+
+I server-mappen finner vi koden til serveren. build.rs er ett program som kjøres når koden bygges som lager den mappestrukturen som serveren forventer. Cargo.toml inneholder en liste over biblioteker som blir brukt, mens Cargo.lock blir brukt av byggeverktøyet for å laste ned samme versjon som ble brukt under utviklingen av serveren. Selve kildekoden til serveren finnes i mappen src. main.rs inneholder main-funksjonen, som kjører når programmet blir kjørt. I tillegg inneholder den funksjoner som ble brukt under testing. De andre filene inneholder modulen med samme navn som filen. Filene som heter mod.rs inneholder modulen som har samme navn som mappen filen ligger i. For eksempel inneholder filen interface/mod.rs interface-modulen, som er der hvor selve serveren er implementert. led og ds18b20 inneholder moduler som interfacer med HW. mock har funksjonalitet for å simulere systemet. pid har selve regulator-logikken, mens controller har infrasturkturen rundt regulatoren.

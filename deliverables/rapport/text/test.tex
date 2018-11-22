@@ -1,0 +1,12 @@
+\section{Testing}
+\todo[inline]{Et kapittel med uttesting mot funksjonell og teknisk spesifikasjon, hvordan virket systemet, forslag til eventuelle endringer}
+
+Rust sitt typesystem er veldig kraftig, og kan forhidre mange vanlige bugs som ofte oppstår når man bruker pekere, i tillegg til å kunne forhidre data-races. Dette var til stor hjelp underveis i implementasjonen, da systemet inneholder flere tråder. I tillegg kan man bruke typesystemet til å bidra til å holde logikken og programflyten riktig ved å konstruere typene sine rett. Dette sørger for at man kan luke bort mange typer feil hvis programmet kompilerer. 
+
+Testing ble ellers gjort ved å lage små programmer som gjorde en liten del av spesifikkasjonen. Ved å sjekke at disse programmene fungerte som de skulle kan man dermed være litt sikrere på at systemet fungerer som det skal.
+
+Fordi systemet kjører på en Raspberry Pi kan alt untatt det som interfacer direkte med sensorer og pådragsorganer kjøre på en hvilken som helst datamaskin med Linux. Det ble derfor implementert ett simulert system, med simulert sensor og pådragsorgan slik at hele systemet kan testes på en vanlig datamaskin.
+
+For å kunne teste serveren skikelig ble det også implementert ett klient-bibliotek i Python. Dette biblioteket ble så brukt i ett script som testet all funksjonaliteten til serveren ved vanlig bruk. Ved hjelp av dette scriptet ble det oppdaget at serveren ikke klarer å håndtere en forespørsel om å slette en logfil som er i bruk. Den ønskede oppførselen i dette tilfellet er å returnere en feil til klienten, men av en uviss grunn blir tråden som behandler forespørselen låst, og klienten får ingen respons på forespørselen. Hvorfor dette skjer er fortsatt uvisst, og må undersøkes nærmere.
+
+I tillegg ble det i denne fasen oppdaget at ved de fleste feil i serveren får brukeren en HTTP 500 respons (intern server feil). Dette skjer selv om det er brukeren som er årsaken til at feilen skjer, og en feilkode i 400-familien skulle ha blitt returnert. Dette gjør at klienten ikke vet noe om grunnen til at forespørsel returente en feilmelding. Å endre dette er ikke veldig vanskelig, og fører ikke til store endringer i systemet, men har blitt prioritert ned i forhold til andre prosjekter for øyeblikket.

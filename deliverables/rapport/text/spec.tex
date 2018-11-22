@@ -1,0 +1,16 @@
+\section{Spesifikasjon og akseptansekriterier}
+\todo[inline]{Punktvis funksjonell og theknidk dpesifikasjon og akseptansekriterier.}
+
+Overordnede krav for systemet er at det skal kunne ta inn ett meske-forløp som det skal kunne regulere temperaturen etter, samt at det sakl kunne være mulig å følge med på prossessen i sanntid og hente ut en log etterpå.
+Samtidig er det ønskelig at systemet skal fungere med allerede innkjøpte temperetursensorer av type DS18B20 og en kokeplate som kan styres med reléer. Temperatursensorene kommuniserer over en Onewire-buss. 
+
+I tillegg til å kunne styre meskeprossessen er det en fordel å kunne styre temperaturen under gjæringsprossesen. Gjæringen foregår inni et kjøleskap, der kompressoren kan skrus av og på via ett relé. I tillegg er det ett varmeelement inni kjøleskapet som også kan styres via ett relé.
+
+I tillegg skulle systemet implementeres i programmeringsspråket Rust for bedre sammspill med prosjektoppgaven.
+
+Dette gir følgene overordnede krav til systemet:
+\begin{itemize}
+    \item Kunne regulere temperaturen i en prosses, via en gitt sensor og pådragsorgan.
+    \item Kunne logge relevante prosess-variabler som målt temperatur og pådrag fra regulatoren.
+    \item Gjøre det mulig for en klient  å hvise tilstanden i prosesses live.
+\end{itemize}
