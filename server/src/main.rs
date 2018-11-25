@@ -9,10 +9,6 @@ extern crate serde_json;
 
 extern crate chrono;
 
-extern crate linux_embedded_hal;
-extern crate embedded_hal;
-extern crate sysfs_gpio;
-
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -21,9 +17,6 @@ use controller::Controller;
 use controller::sensor::Sensor;
 use controller::output::Output;
 use controller::mock::*;
-
-use controller::ds18b20;
-use controller::led;
 
 use controller::pid::Reference;
 use controller::ReferenceSeries;
@@ -57,19 +50,6 @@ fn test_pid() {
     std::thread::sleep(std::time::Duration::from_secs(200));
 }
 
-/// Function for testing HW sensor and output
-fn test_physical() {
-    let sensor1 = ds18b20::DS18B20::new("28-000009eab19f".to_owned());
-    let sensor2 = ds18b20::DS18B20::new("28-000009eb40fe".to_owned());
-    let mut output = led::LedOutput::new(20, 21, 50);
-    for _ in 0..10 {
-        output.set(30.0);
-        println!("Temp1: {}", sensor1.read());
-        println!("Temp2: {}", sensor2.read());
-        output.set(0.0);
-    }
-    output.set(100.0);
-}
 
 /// Function for testing the server, using mocked input and output
 fn test_start_interface() {

@@ -16,9 +16,6 @@ pub mod sensor;
 pub mod output;
 pub mod mock;
 
-pub mod ds18b20;
-pub mod led;
-
 pub mod pid;
 
 use self::sensor::Sensor;
