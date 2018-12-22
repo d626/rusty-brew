@@ -197,12 +197,14 @@ impl Controller {
                         }
                     };
 
-                    let y = sensor.lock().expect("Unable to lock sensor").read();
-                    let u = pid.pid(y, r as f32);
-                    output_ref.lock().expect("Unable to lock output").set(u);
                     {
+                        let y = sensor.lock().expect("Unable to lock sensor").read();
+                        let u = pid.pid(y, r as f32);
+                        output_ref.lock().expect("Unable to lock output").set(u);
+
                         let logger = &mut *logger_ref.lock().expect("Unable to lock logger");
-                        logger.as_mut().expect("Unable to take logger as mut").add_entry(r as f32, y, u);
+                        logger.as_mut().expect("Unable to take logger as mut")
+                            .add_entry(r as f32, y, u);
                     }
                 };
             }).join().expect("Unable to join pid thread"); // The thread should not panic, unless something has gone horribly wrong

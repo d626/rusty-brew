@@ -15,6 +15,7 @@ extern crate sysfs_gpio;
 
 use std::collections::HashMap;
 use std::sync::Mutex;
+// use std::f32;
 
 pub mod controller;
 use controller::Controller;
@@ -25,7 +26,7 @@ use controller::mock::*;
 use controller::ds18b20;
 use controller::led;
 
-use controller::pid::Reference;
+use controller::pid::{Reference, PidParameters};
 use controller::ReferenceSeries;
 
 pub mod log;
@@ -34,7 +35,7 @@ pub mod interface;
 
 /// Program entry point
 fn main() {
-    test_start_interface();
+    log();
 }
 
 /// Function for testing the controller
@@ -76,7 +77,10 @@ fn test_start_interface() {
     let mock_state = MockInternalState::new();
     let mock_sensor = MockTemperatureSensor::new(mock_state.clone());
     let mock_output = MockOutput::new(mock_state.clone());
-    let mock_controller = Controller::new(mock_sensor, mock_output, Default::default(), 60);
+    let mock_controller = Controller::new(mock_sensor,
+                                           mock_output,
+                                           PidParameters::new(7.0, 0.6, 0.0, 35.0),
+                                           60);
 
     let reference = Reference { duration: 23, temp: 59 };
     let series = ReferenceSeries::new(vec![reference]);
@@ -104,7 +108,10 @@ fn test_mock_system() {
         // let mock_controller = controller::Controller::new(mock_sensor, mock_output);
 
         // let controllers = vec![mock_controller];
-        let _mock_controller = Controller::new(mock_sensor, mock_output, Default::default(), 60);
+        let _mock_controller = Controller::new(mock_sensor,
+                                               mock_output,
+                                               PidParameters::default(),
+                                               60);
     }
     std::thread::sleep(std::time::Duration::from_millis(10*1000));
     println!("Finished");
@@ -115,4 +122,58 @@ fn test_get_logs() {
     for name in log::get_list_of_logs() {
         println!("{}", name);
     }
+}
+
+fn test_log() {
+    let sensor = ds18b20::DS18B20::new("28-000006739a01".to_owned());
+    let mock_state = MockInternalState::new();
+    let mock_output = MockOutput::new(mock_state.clone());
+    let reference_series = vec![
+        Reference{duration: 60*60*24, temp: 100},
+    ];
+    let reference_series = ReferenceSeries::new(reference_series);
+    let parameters = controller::pid::PidParameters::default();
+
+    let mut controller = controller::Controller::new(sensor, mock_output, parameters, 1);
+    controller.start("response".to_owned(), reference_series).expect("Unable to start logging");
+}
+
+fn log() {
+    use std::sync::mpsc::channel;
+    use std::thread;
+    use std::time::Duration;
+    use std::io;
+
+    // let sensor = ds18b20::DS18B20::new("28-000006739a01".to_owned());
+    let sensor = MockTemperatureSensor::new(MockInternalState::new());
+    let mut log = log::Logger::new("step_response".to_owned());
+    let (tx, rx) = channel();
+
+    let handle = thread::spawn(move || {
+        loop {
+            match rx.try_recv() {
+                Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                    return;
+                }
+                _ => {
+                    println!("Logged");
+                    log.add_entry(0., sensor.read(), 0.);
+                    thread::sleep(Duration::from_secs(10));
+                }
+            }
+        }
+    });
+    thread::spawn(move || {
+        loop {
+            let mut input = String::new();
+            print!("Stop logging? ");
+            io::stdin().read_line(&mut input).expect("Failed to read input");
+            if input.trim() == "y" {
+                return;
+            } else {
+                tx.send(()).expect("Unable to send");
+            }
+        }
+    });
+    handle.join().expect("Error while joining");
 }

@@ -94,10 +94,15 @@ impl MockOutput {
     }
 }
 
+/// f32 is only PartialOrd, not Ord, so we need our own min
+macro_rules! min {
+    ($a:expr, $b:expr) => {if $a <= $b {$a} else {$b};}
+}
+
 impl Output for MockOutput {
     fn set(&mut self, output: f32) {
         *self.0.output_mutex.lock()
-            .expect("Unable to set output_mutex") = output;
+            .expect("Unable to set output_mutex") = min!(output, 150.0);
     }
 
     fn turn_off(&mut self) {
